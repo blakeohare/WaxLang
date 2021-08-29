@@ -4,7 +4,7 @@ Wax is an experiment in progress to create a programming language and framework 
 
 ## Exporting App Bundles
 
-The final output of Wax is a bundle of components. One of the component is designated as the Main Component and makes calls the other components. 
+The final output of Wax is a bundle of components. One of the component is designated as the Main Component and makes calls to the other components. 
 
 A Wax Component can be written using WaxLang, which has no platform-dependent features (such as graphics or input) and is good for writing pure business logic. Alternatively, you can also write a Wax component for specific platforms, using languages such as JavaScript, or PHP, or C with interesting dependencies. The source codes for these various platforms co-exist with each other in your code base. When you export your app bundle, you can choose for which platform you want to export.
 
@@ -22,4 +22,4 @@ Suppose you wanted to create a program that creates Android APK files. This requ
 
 # Status
 
-This project is currently being built and tinkered with. It is not usable yet. There is a sample project called PrimeChecker that demonstrates the structure of Wax projects.
+This project is currently being built and tinkered with. It is not usable yet. There is a sample project called PrimeExample that demonstrates the structure of Wax projects.
