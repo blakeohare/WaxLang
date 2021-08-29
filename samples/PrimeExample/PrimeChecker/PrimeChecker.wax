@@ -1,0 +1,24 @@
+function handle(request, response) {
+    print("Checking the prime factors of 161...");
+
+    primeFactorsResponse = hub.sendRequestSync(
+        "PrimeChecker", 
+        {
+            "num": 161,
+        });
+
+    if (primeFactorsResponse.hasError) {
+        msg = primeFactorsResponse.errorMessage;
+        print("Looks like the following error occurred: " + msg);
+        print("I will send this error back to the main component");
+        response.sendError(msg);
+    } else {
+        printLocal("The prime factors are:");
+        nums = primeFactorsResponse.data['nums'];
+        for (num : nums) {
+            printLocal("  * " + num);
+        }
+        print("I will now send my conclusion as a response.");
+        response.send({ "isPrime": nums.length == 1 ? true : false });
+    }
+}

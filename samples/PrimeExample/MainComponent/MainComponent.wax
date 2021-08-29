@@ -1,0 +1,20 @@
+function handle(request, response) {
+  print("Is 161 prime?");
+
+  primeCheckResponse = hub.sendRequestSync(
+    "PrimeChecker", 
+    {
+      "num": 161,
+    });
+
+  if (primeCheckResponse.hasError) {
+    print("Couldn't check primeness due to this error: " + primeCheckResponse.errorMessage);
+  } else {
+    print(
+      "It seems that this " + 
+      (primeCheckResponse.isResult ? "IS" : "is NOT") + 
+      " a prime number.");
+  }
+  print("This concludes the main component!");
+  response.send(null);
+}

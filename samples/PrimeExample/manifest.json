@@ -1,0 +1,17 @@
+{
+  "moduleTargets": [
+    {
+      "name": "PrimeChecker",
+      "src": "PrimeChecker",
+      "lang": "wax",
+      "action": "bundle"
+    },
+    {
+      "name": "MainComponent",
+      "src": "MainComponent",
+      "lang": "wax",
+      "action": "bundle"
+    }
+  ],
+  "mainModule": "MainComponent"
+}

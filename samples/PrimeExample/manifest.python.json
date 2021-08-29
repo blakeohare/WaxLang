@@ -1,0 +1,15 @@
+{
+  "inherit": "manifest.json",
+  "output": "bin/PythonExample",
+
+  "outputType": "python",
+  
+  "moduleTargets": [
+    {
+      "name": "PrimeFactors",
+      "src": "PrimeFactors_python",
+      "lang": "python",
+      "action": "bundle"
+    }
+  ]
+}

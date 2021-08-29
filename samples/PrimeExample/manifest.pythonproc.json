@@ -1,0 +1,15 @@
+{
+  "inherit": "manifest.json",
+  "output": "bin/NativeWithPythonProcessExample",
+
+  "outputType": "native",
+  
+  "moduleTargets": [
+    {
+      "name": "PrimeFactors",
+      "src": "PrimeFactors_python",
+      "lang": "python",
+      "action": "process"
+    }
+  ]
+}

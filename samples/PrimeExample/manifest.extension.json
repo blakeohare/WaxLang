@@ -1,0 +1,15 @@
+{
+  "inherit": "manifest.json",
+  "output": "bin/WaxtensionExample",
+
+  "outputType": "native",
+  
+  "moduleTargets": [
+    {
+      "name": "PrimeFactors",
+      "src": "PrimeFactors_extension",
+      "lang": "crayon",
+      "action": "extension"
+    }
+  ]
+}

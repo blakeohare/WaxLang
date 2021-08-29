@@ -1,0 +1,15 @@
+{
+  "inherit": "manifest.json",
+  "output": "bin/WebExample",
+
+  "outputType": "web",
+  
+  "moduleTargets": [
+    {
+      "name": "PrimeFactors",
+      "src": "PrimeFactors_js",
+      "lang": "javascript",
+      "action": "bundle"
+    }
+  ]
+}
