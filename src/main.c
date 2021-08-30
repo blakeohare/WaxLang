@@ -4,29 +4,36 @@
 #include "util/dictionaries.h"
 #include "util/json.h"
 #include "util/valueutil.h"
+#include "util/fileio.h"
 
 int main(int argc, char** argv) {
-  String* value = new_string("Hello, World!");
-  printf("%s\n", value->cstring);
-
-  List* list = new_list();
-  for (int i = 0; i < argc; ++i)
+  
+  if (argc != 2)
   {
-    list_add(list, new_string(argv[i]));
+    printf("Usage: waxcli manifest-file.json\n");
+    return 0;
   }
 
-  printf("Args length is %d\n", list->length);
-  for (int i = 0; i < list->length; ++i)
+  char* manifest_file_path = argv[1];
+  String* manifest_file_content = file_read_text(manifest_file_path);
+  if (manifest_file_content == NULL)
   {
-    String* str = (String*) list_get(list, i);
-    printf("Arg #%d is '%s'\n", (i + 1), str->cstring);
+    printf("Manifest file does not exist: %s\n", manifest_file_path);
+    return 0;
   }
+
+  printf("%s\n", manifest_file_content->cstring);
 
   int error_code;
   int error_line;
   int error_col;
-  char* test = "{\"a\": 42, \"b\": [1, 2, true], \"c\":\n false, \"d\": { \"nested?\": null, \"yes\": \"nifty!\"   ,\n\"pi\":3.1415926535897 }\n }";
-  void* output = json_parse(test, &error_code, &error_line, &error_col);
-  if (error_code) json_print_error(error_code, error_line, error_col);
-  else printf("%s\n", value_to_string(output)->cstring);
+  
+  
+  void* manifest = json_parse(manifest_file_content->cstring, &error_code, &error_line, &error_col);
+  if (error_code)
+  {
+    json_print_error(error_code, error_line, error_col);
+    return 0;
+  }
+  printf("Found this manifest: %s\n", value_to_string(manifest)->cstring);
 }

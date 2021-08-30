@@ -19,6 +19,27 @@ typedef struct _StringBuilder {
 
 String* new_string(const char* value)
 {
+  static String* EMPTY = NULL;
+  static String** SINGLE_CHARS = NULL;
+  if (EMPTY == NULL)
+  {
+    EMPTY = (String*) gc_create_item(sizeof(String), 'S');
+    EMPTY->length = 0;
+    EMPTY->hash = 1319;
+    EMPTY->cstring = (char*) malloc(sizeof(char));
+    EMPTY->cstring[0] = '\0';
+    SINGLE_CHARS = (String**) malloc(sizeof(String*) * 128);
+    for (int i = 0; i < 128; ++i)
+    {
+      String* s = (String*) gc_create_item(sizeof(String), 'S');
+      s->length = 1;
+      s->hash = value[0];
+      s->cstring = (char*) malloc(sizeof(char) * 2);
+      s->cstring[0] = i;
+      s->cstring[1] = '\0';
+      SINGLE_CHARS[i] = s;
+    }
+  }
   int len = 0;
   int hash = 0;
   char c;
@@ -29,8 +50,15 @@ String* new_string(const char* value)
   }
   if (hash == 0) hash = 1319;
 
+  if (len <= 1)
+  {
+    if (len == 0) return EMPTY;
+    if (value[0] > 0) return SINGLE_CHARS[value[0]];
+  }
+
   char* cstring = (char*) malloc(sizeof(char) * (len + 1));
-  memcpy(cstring, value, len + 1);
+  memcpy(cstring, value, len);
+  cstring[len] = '\0';
   String* str = (String*) gc_create_item(sizeof(String), 'S');
   str->length = len;
   str->hash = hash;
@@ -92,6 +120,23 @@ void string_builder_free(StringBuilder* sb)
 {
   free(sb->chars);
   free(sb);
+}
+
+String* string_builder_to_string_and_free(StringBuilder* sb)
+{
+  String* output = string_builder_to_string(sb);
+  string_builder_free(sb);
+  return output;
+}
+
+String* string_concat(char* a, char* b)
+{
+  StringBuilder* sb = new_string_builder();
+  string_builder_append_chars(sb, a);
+  string_builder_append_chars(sb, b);
+  String* output = string_builder_to_string(sb);
+  string_builder_free(sb);
+  return output;
 }
 
 int string_equals(String* a, String* b)

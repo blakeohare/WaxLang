@@ -34,11 +34,7 @@ Integer* wrap_int(int value)
     }
   }
 
-  if (value < 1024 && value >= -1024)
-  {
-    if (ints[value + 1024] == NULL) printf("Int cache is still null\n");
-    return ints[value + 1024];
-  }
+  if (value < 1024 && value >= -1024) return ints[value + 1024];
 
   Integer* i = (Integer*) gc_create_item(sizeof(Integer), 'I');
   i->value = value;

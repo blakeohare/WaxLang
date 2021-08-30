@@ -161,4 +161,70 @@ String* value_to_string(void* item)
   return str;
 }
 
+List* string_split(const char* value, const char* sep)
+{
+  List* output = new_list();
+  if (sep[0] == '\0')
+  {
+    char buf[2];
+    buf[1] = '\0';
+    for (int i = 0; value[i] != '\0'; ++i)
+    {
+      buf[0] = value[i];
+      list_add(output, new_string(buf));
+    }
+    return output;
+  }
+  char first_char = sep[0];
+  int sep_len = strlen(sep);
+  char c;
+  StringBuilder* current_item = new_string_builder();
+  int is_match = 0;
+  for (int i = 0; value[i] != '\0'; ++i)
+  {
+    is_match = 0;
+    c = value[i];
+    if (c == first_char)
+    {
+      is_match = 1;
+      for (int j = 1; j < sep_len; ++j)
+      {
+        if (value[i + j] != sep[j])
+        {
+          is_match = 0;
+          break;
+        }
+      }
+    }
+
+    if (is_match)
+    {
+      list_add(output, string_builder_to_string(current_item));
+      current_item->length = 0;
+      i += sep_len - 1;
+    }
+    else
+    {
+      string_builder_append_char(current_item, c);
+    }
+  }
+  list_add(output, string_builder_to_string_and_free(current_item));
+  return output;
+}
+
+String* list_join(List* list, String* sep)
+{
+  if (list->length == 0) return new_string("");
+  if (list->length == 1 && gc_get_type(list->items[0]) == 'S') return (String*) list->items[0];
+  StringBuilder* sb = new_string_builder();
+  int sep_non_empty = sep->length > 0;
+  for (int i = 0; i < list->length; ++i)
+  {
+    if (i > 0 && sep_non_empty) string_builder_append_chars(sb, sep->cstring);
+    void* item = list->items[i];
+    _unknown_value_to_string(item, sb);
+  }
+  return string_builder_to_string_and_free(sb);
+}
+
 #endif
