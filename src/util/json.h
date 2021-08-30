@@ -110,7 +110,9 @@ void* json_parse_string(JsonParserContext* ctx)
 {
   StringBuilder* sb = new_string_builder();
   json_parse_skip_whitespace(ctx);
-  if (!json_parse_pop_if_next(ctx, "\"")) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
+  if (!json_parse_pop_if_next(ctx, "\"")) {
+    return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
+  }
   while (!json_parse_is_eof(ctx))
   {
     char c = json_parse_pop(ctx);
@@ -138,7 +140,10 @@ void* json_parse_string(JsonParserContext* ctx)
     }
   }
 
-  if (json_parse_is_eof(ctx)) return json_throw_error(ctx, JSON_ERROR_EOF);
+  if (json_parse_is_eof(ctx)) {
+    printf("EOF while parsing string!\n");
+    return json_throw_error(ctx, JSON_ERROR_EOF);
+  }
 
   String* output = string_builder_to_string(sb);
   string_builder_free(sb);
@@ -302,8 +307,6 @@ void* json_parse(char* data, int* error_code, int* error_line, int* error_col)
     return NULL;
   }
   return output;
-
-  
 }
 
 #endif

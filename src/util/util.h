@@ -1,6 +1,18 @@
 #ifndef _UTIL_UTIL_H
 #define _UTIL_UTIL_H
 
+#include <stdlib.h>
+
+void** malloc_ptr_array(int length)
+{
+  void** arr = (void**) malloc(sizeof(void*) * length);
+  for (int i = 0; i < length; ++i)
+  {
+    arr[i] = NULL;
+  }
+  return arr;
+}
+
 int try_parse_int(const char* value, int* value_out)
 {
   int output = 0;

@@ -43,6 +43,7 @@ GCValue* _gc_get_allocations()
 void* gc_create_item(int size, char item_type)
 {
   GCValue* item = (GCValue*) malloc(size + sizeof(GCValue));
+  GCValue* payload = item + 1;
   item->mark = 0;
   item->type = item_type;
   item->gc_field_count = 0; // if something needs to be stored here, the instance initializer will set it.
@@ -63,7 +64,7 @@ void* gc_create_item(int size, char item_type)
     head->next = item;
     item->prev = head;
   }
-  return (void*)(item + 1);
+  return (void*)payload;
 }
 
 char gc_get_type(void* value)

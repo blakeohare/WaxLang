@@ -50,4 +50,24 @@ void* list_get(List* list, int index)
   return list->items[index];
 }
 
+String* list_get_string(List* list, int index)
+{
+  return (String*) list->items[index];
+}
+
+void* list_get_last(List* list)
+{
+  return list->items[list->length - 1];
+}
+
+String* list_get_last_string(List* list)
+{
+  return (String*) list->items[list->length - 1];
+}
+
+void* list_pop(List* list)
+{
+  return list->items[--list->length];
+}
+
 #endif

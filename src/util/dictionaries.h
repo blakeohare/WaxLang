@@ -3,9 +3,10 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "strings.h"
-#include "lists.h"
 #include "gc.h"
+#include "lists.h"
+#include "strings.h"
+#include "util.h"
 
 typedef struct _DictEntry {
   String* key;
@@ -50,18 +51,14 @@ void _dict_rehash(Dictionary* dict)
   }
 
   free(dict->buckets);
-  dict->buckets = (DictEntry**) malloc(sizeof(DictEntry*) * new_length);
-  for (int i = 0; i < new_length; ++i)
-  {
-    dict->buckets[i] = NULL;
-  }
+  dict->buckets = (DictEntry**) malloc_ptr_array(new_length);
 
   // key list goes up to bucket length + 1 when rehash is called
-  for (int i = 0; i <= old_length; ++i)
+  for (int i = 0; i < dict->size; ++i)
   {
     String* key = dict->keys[i];
     void* value = dict->values[i];
-    int bucket_index = key->hash % new_length;
+    int bucket_index = key->hash & (new_length - 1);
     DictEntry* entry = entries;
     entries = entry->next;
     entry->next = dict->buckets[bucket_index];
@@ -77,19 +74,14 @@ int _dict_get_index(Dictionary* dict, String* key, int create_if_missing)
     {
       dict->bucket_length = 8;
       dict->size = 1;
-      dict->buckets = (DictEntry**) malloc(sizeof(DictEntry*) * dict->bucket_length);
-      dict->keys = (String**) malloc(sizeof(String*) * (dict->bucket_length + 1));
-      dict->values = (void**) malloc(sizeof(void*) * (dict->bucket_length + 1));
-      for (int i = 0; i <= dict->bucket_length; ++i)
-      {
-        dict->keys[i] = NULL;
-        dict->values[i] = NULL;
-      }
+      dict->buckets = (DictEntry**) malloc_ptr_array(dict->bucket_length);
+      dict->keys = (String**) malloc_ptr_array(dict->bucket_length + 1);
+      dict->values = (void**) malloc_ptr_array(dict->bucket_length + 1);
       DictEntry* entry = (DictEntry*) malloc(sizeof(DictEntry));
       entry->key = key;
       entry->index = 0;
       entry->next = NULL;
-      dict->buckets[key->hash % dict->bucket_length] = entry;
+      dict->buckets[key->hash & (dict->bucket_length - 1)] = entry;
       dict->keys[0] = key;
       return 0;
     }
@@ -100,7 +92,7 @@ int _dict_get_index(Dictionary* dict, String* key, int create_if_missing)
   }
   else
   {
-    int bucket_index = key->hash % dict->bucket_length;
+    int bucket_index = key->hash & (dict->bucket_length - 1);
     DictEntry* walker = dict->buckets[bucket_index];
     DictEntry* match = NULL;
     while (walker != NULL)
@@ -114,8 +106,10 @@ int _dict_get_index(Dictionary* dict, String* key, int create_if_missing)
         walker = walker->next;
       }
     }
-    if (match) return match->index;
-
+    if (match != NULL) {
+      return match->index;
+    }
+    
     if (create_if_missing)
     {
       int index = dict->size;
