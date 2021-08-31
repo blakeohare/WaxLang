@@ -13,6 +13,16 @@ void** malloc_ptr_array(int length)
   return arr;
 }
 
+void* malloc_clean(int size)
+{
+  char* ptr = (char*) malloc(size);
+  for (int i = 0; i < size; ++i)
+  {
+    ptr[i] = '\0';
+  }
+  return ptr;
+}
+
 int try_parse_int(const char* value, int* value_out)
 {
   int output = 0;

@@ -68,70 +68,38 @@ void _dict_rehash(Dictionary* dict)
 
 int _dict_get_index(Dictionary* dict, String* key, int create_if_missing)
 {
-  if (dict->size == 0) 
+  if (dict->buckets == NULL) 
   {
-    if (create_if_missing)
-    {
-      dict->bucket_length = 8;
-      dict->size = 1;
-      dict->buckets = (DictEntry**) malloc_ptr_array(dict->bucket_length);
-      dict->keys = (String**) malloc_ptr_array(dict->bucket_length + 1);
-      dict->values = (void**) malloc_ptr_array(dict->bucket_length + 1);
-      DictEntry* entry = (DictEntry*) malloc(sizeof(DictEntry));
-      entry->key = key;
-      entry->index = 0;
-      entry->next = NULL;
-      dict->buckets[key->hash & (dict->bucket_length - 1)] = entry;
-      dict->keys[0] = key;
-      return 0;
-    }
-    else
-    {
-      return -1;
-    }
-  }
-  else
-  {
-    int bucket_index = key->hash & (dict->bucket_length - 1);
-    DictEntry* walker = dict->buckets[bucket_index];
-    DictEntry* match = NULL;
-    while (walker != NULL)
-    {
-      if (string_equals(walker->key, key))
-      {
-        match = walker;
-      }
-      else
-      {
-        walker = walker->next;
-      }
-    }
-    if (match != NULL) {
-      return match->index;
-    }
+    if (!create_if_missing) return -1;
     
-    if (create_if_missing)
-    {
-      int index = dict->size;
-      dict->keys[index] = key;
-      dict->size++;
-      DictEntry* entry = (DictEntry*) malloc(sizeof(DictEntry));
-      entry->key = key;
-      entry->index = index;
-      entry->next = dict->buckets[bucket_index];
-      dict->buckets[bucket_index] = entry;
-
-      if (dict->size > dict->bucket_length)
-      {
-        _dict_rehash(dict);
-      }
-      return entry->index;
-    }
-    else
-    {
-      return -1;
-    }
+    dict->bucket_length = 8;
+    dict->size = 0;
+    dict->buckets = (DictEntry**) malloc_ptr_array(dict->bucket_length);
+    dict->keys = (String**) malloc_ptr_array(dict->bucket_length + 1);
+    dict->values = (void**) malloc_ptr_array(dict->bucket_length + 1);
   }
+
+  int bucket_index = key->hash & (dict->bucket_length - 1);
+  for (DictEntry* walker = dict->buckets[bucket_index]; walker != NULL; walker = walker->next) {
+    if (string_equals(walker->key, key)) return walker->index;
+  }
+  
+  if (create_if_missing)
+  {
+    int index = dict->size;
+    dict->keys[index] = key;
+    dict->size++;
+    DictEntry* entry = (DictEntry*) malloc_clean(sizeof(DictEntry));
+    entry->key = key;
+    entry->index = index;
+    entry->next = dict->buckets[bucket_index];
+    dict->buckets[bucket_index] = entry;
+
+    if (dict->size > dict->bucket_length) _dict_rehash(dict);
+    
+    return index;
+  }
+  return -1;
 }
 
 // returns 1 if it's a collision/overwrite
@@ -150,7 +118,7 @@ void* dictionary_get(Dictionary* dict, String* key)
   return dict->values[index];
 }
 
-List* dictionary_get_values(Dictionary* dict)
+List* dictionary_get_keys(Dictionary* dict)
 {
   List* keys = new_list();
   for (int i = 0; i < dict->size; ++i)

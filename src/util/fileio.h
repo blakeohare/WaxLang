@@ -56,13 +56,12 @@ String* file_read_text(char* path)
   FILE* file = fopen(npath->cstring, "r");
   if (!file) return NULL;
   int bytes_read = 0;
-  char buffer[256];
+  char buffer[1025];
   StringBuilder* sb = new_string_builder();
-  while ((bytes_read = fread(buffer, 1, 255, file)) > 0)
+  while ((bytes_read = fread(buffer, 1, 1024, file)) > 0)
   {
     buffer[bytes_read] = '\0';
     string_builder_append_chars(sb, buffer);
-
   }
 
   if (ferror(file))

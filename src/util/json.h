@@ -110,7 +110,8 @@ void* json_parse_string(JsonParserContext* ctx)
 {
   StringBuilder* sb = new_string_builder();
   json_parse_skip_whitespace(ctx);
-  if (!json_parse_pop_if_next(ctx, "\"")) {
+  if (!json_parse_pop_if_next(ctx, "\""))
+  {
     return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
   }
   while (!json_parse_is_eof(ctx))
@@ -140,7 +141,8 @@ void* json_parse_string(JsonParserContext* ctx)
     }
   }
 
-  if (json_parse_is_eof(ctx)) {
+  if (json_parse_is_eof(ctx))
+  {
     printf("EOF while parsing string!\n");
     return json_throw_error(ctx, JSON_ERROR_EOF);
   }
@@ -169,7 +171,7 @@ void* json_parse_list(JsonParserContext* ctx)
     list_add(output, item);
     json_parse_skip_whitespace(ctx);
   }
-  
+
   json_parse_skip_whitespace(ctx);
   return output;
 }
@@ -212,7 +214,11 @@ void* json_parse_number(JsonParserContext* ctx)
 
     if (c == '.')
     {
-      if (decimal_found) { string_builder_free(sb); return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX); }
+      if (decimal_found)
+      {
+        string_builder_free(sb); 
+        return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
+      }
       decimal_found = 1;
       string_builder_append_char(sb, '.');
       json_parse_pop(ctx);
@@ -293,7 +299,7 @@ void* json_parse(char* data, int* error_code, int* error_line, int* error_col)
   JsonParserContext ctx;
   ctx.str = str->cstring;
   ctx.index = 0;
-  ctx.length = strlen(data);
+  ctx.length = str->length;
   ctx.error_code = JSON_OK;
   ctx.line = 1;
   ctx.col = 1;

@@ -6,8 +6,8 @@
 #include "util/valueutil.h"
 #include "util/fileio.h"
 
-int main(int argc, char** argv) {
-  
+int main(int argc, char** argv)
+{
   if (argc != 2)
   {
     printf("Usage: waxcli manifest-file.json\n");
@@ -22,12 +22,9 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  printf("%s\n", manifest_file_content->cstring);
-
   int error_code;
   int error_line;
   int error_col;
-  
   
   void* manifest = json_parse(manifest_file_content->cstring, &error_code, &error_line, &error_col);
   if (error_code)
@@ -36,4 +33,6 @@ int main(int argc, char** argv) {
     return 0;
   }
   printf("Found this manifest: %s\n", value_to_string(manifest)->cstring);
+  
+  return 0;
 }

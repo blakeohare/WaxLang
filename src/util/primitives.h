@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include "gc.h"
+#include "util.h"
 
 typedef struct _Integer {
   int value;
@@ -22,7 +23,7 @@ Integer* wrap_int(int value)
   static Integer** ints = NULL;
   if (!initialized)
   {
-    ints = (Integer**) malloc(sizeof(Integer*) * 2048);
+    ints = (Integer**) malloc_clean(sizeof(Integer*) * 2048);
     initialized = 1;
     for (int i = 0; i < 2048; ++i)
     {

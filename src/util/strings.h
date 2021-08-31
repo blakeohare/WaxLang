@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gc.h"
+#include "util.h"
 
 typedef struct _String {
   int length;
@@ -26,15 +27,15 @@ String* new_string(const char* value)
     EMPTY = (String*) gc_create_item(sizeof(String), 'S');
     EMPTY->length = 0;
     EMPTY->hash = 1319;
-    EMPTY->cstring = (char*) malloc(sizeof(char));
+    EMPTY->cstring = (char*) malloc_clean(sizeof(char));
     EMPTY->cstring[0] = '\0';
-    SINGLE_CHARS = (String**) malloc(sizeof(String*) * 128);
+    SINGLE_CHARS = (String**) malloc_clean(sizeof(String*) * 128);
     for (int i = 0; i < 128; ++i)
     {
       String* s = (String*) gc_create_item(sizeof(String), 'S');
       s->length = 1;
       s->hash = value[0];
-      s->cstring = (char*) malloc(sizeof(char) * 2);
+      s->cstring = (char*) malloc_clean(sizeof(char) * 2);
       s->cstring[0] = i;
       s->cstring[1] = '\0';
       SINGLE_CHARS[i] = s;
@@ -56,7 +57,7 @@ String* new_string(const char* value)
     if (value[0] > 0) return SINGLE_CHARS[value[0]];
   }
 
-  char* cstring = (char*) malloc(sizeof(char) * (len + 1));
+  char* cstring = (char*) malloc_clean(sizeof(char) * (len + 1));
   memcpy(cstring, value, len);
   cstring[len] = '\0';
   String* str = (String*) gc_create_item(sizeof(String), 'S');
@@ -68,10 +69,10 @@ String* new_string(const char* value)
 
 StringBuilder* new_string_builder()
 {
-  StringBuilder* sb = (StringBuilder*) malloc(sizeof(StringBuilder));
+  StringBuilder* sb = (StringBuilder*) malloc_clean(sizeof(StringBuilder));
   sb->length = 0;
-  sb->capacity = 10;
-  sb->chars = (char*) malloc(sizeof(char) * sb->capacity);
+  sb->capacity = 20;
+  sb->chars = (char*) malloc_clean(sizeof(char) * sb->capacity);
   return sb;
 }
 
@@ -79,13 +80,13 @@ void _string_builder_ensure_capacity(StringBuilder* sb, int additional_chars)
 {
   int required_capacity = sb->length + additional_chars;
   int new_capacity = sb->capacity;
-  while (required_capacity < new_capacity)
+  while (required_capacity > new_capacity)
   {
     new_capacity *= 2;
   }
   if (new_capacity > sb->capacity)
   {
-    char* new_chars = (char*) malloc(sizeof(char) * new_capacity);
+    char* new_chars = (char*) malloc_clean(sizeof(char) * new_capacity);
     memcpy(new_chars, sb->chars, sb->length);
     sb->capacity = new_capacity;
     free(sb->chars);
@@ -167,14 +168,15 @@ String* string_replace(const char* value, const char* old_value, const char* new
   if (value[0] == '\0') return new_string("");
   char first_char = old_value[0];
   int i = 0;
-  do
+  while (value[i] != '\0')
   {
     if (value[i] == first_char)
     {
       int match = 1;
       for (int j = 1; j < old_len; ++j) // don't have to worry about the pointer going off the end since there are \0's for both.
       {
-        if (value[i + j] != old_value[j]) {
+        if (value[i + j] != old_value[j])
+        {
           match = 0;
           break;
         }
@@ -182,19 +184,20 @@ String* string_replace(const char* value, const char* old_value, const char* new
       if (match)
       {
         string_builder_append_chars(output, new_value);
-        i += new_len;
+        i += old_len;
       }
       else
       {
         string_builder_append_char(output, first_char);
+        i++;
       }
     }
     else
     {
       string_builder_append_char(output, value[i]);
+      i++;
     }
-    ++i;
-  } while (value[i] != '\0');
+  }
   
   String* str = string_builder_to_string(output);
   string_builder_free(output);
