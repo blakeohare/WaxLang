@@ -5,6 +5,7 @@
 #include "util/json.h"
 #include "util/valueutil.h"
 #include "util/fileio.h"
+#include "util/gc.h"
 
 int main(int argc, char** argv)
 {
@@ -32,7 +33,15 @@ int main(int argc, char** argv)
     json_print_error(error_code, error_line, error_col);
     return 0;
   }
+
+  gc_init_pass();
+  gc_tag_item(manifest);
+  gc_run();
+
   printf("Found this manifest: %s\n", value_to_string(manifest)->cstring);
+
+  gc_init_pass();
+  gc_run();
   
   return 0;
 }

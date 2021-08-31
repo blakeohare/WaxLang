@@ -1,80 +1,231 @@
 #ifndef _UTIL_GC_H
 #define _UTIL_GC_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "gcbase.h"
+#include "dictionaries.h"
+#include "lists.h"
+#include "strings.h"
 
-#include "util.h"
+typedef struct _GCQueue {
+  GCValue* value;
+  struct _GCQueue* next;
+} GCQueue;
 
-/*
-  Types:
-    S - string
-    N - null
-    I - int
-    F - float (double)
-    L - list
-    D - dictionary
-    C - instance of a struct (complex)
-*/
-
-typedef struct _GCValue {
-  int mark;
-  int gc_field_count;
-  struct _GCValue* next;
-  struct _GCValue* prev;
-  int save;
-  int type;
-} GCValue;
-
-GCValue* _gc_get_allocations()
+void gc_tag_item(void* ptr)
 {
-  static GCValue* alloc_head = NULL;
-  if (alloc_head == NULL)
-  {
-    alloc_head = (GCValue*) malloc_clean(sizeof(GCValue));
-    alloc_head->mark = 0;
-    alloc_head->gc_field_count = 0;
-    alloc_head->type = 0;
-    alloc_head->save = 1;
-    alloc_head->next = alloc_head;
-    alloc_head->prev = alloc_head;
-  }
-  return alloc_head;
+  int* pass_id_ptr = _gc_get_current_pass_id();
+  GCValue* value = ((GCValue*)ptr) - 1;
+  value->mark = *pass_id_ptr;
 }
 
-void* gc_create_item(int size, char item_type)
+void gc_init_pass()
 {
-  GCValue* item = (GCValue*) malloc_clean(size + sizeof(GCValue));
-  GCValue* payload = item + 1;
-  item->mark = 0;
-  item->type = item_type;
-  item->gc_field_count = 0; // if something needs to be stored here, the instance initializer will set it.
-  item->save = 0;
-
   GCValue* head = _gc_get_allocations();
-  if (head->next == head)
+  int* pass_id_ptr = _gc_get_current_pass_id();
+  int pass_id = *pass_id_ptr + 1;
+  if (pass_id > 2100000000)
   {
-    head->next = item;
-    head->prev = item;
-    item->next = head;
-    item->prev = head;
+    GCValue* walker = head->next;
+    while (walker != head)
+    {
+      walker->mark = 1;
+      walker = walker->next;
+    }
+    pass_id = 2;
+    *pass_id_ptr = pass_id;
   }
-  else
-  {
-    GCValue* next = head->next;
-    item->next = next;
-    next->prev = item;
-    head->next = item;
-    item->prev = head;
-  }
-  return (void*)payload;
+  *pass_id_ptr = pass_id;
+  gc_tag_item((void*)(head + 1));
 }
 
-char gc_get_type(void* value)
+void _gc_add_to_queue(GCQueue** discard_queue, GCQueue** queue, GCValue* item)
 {
-  GCValue* gcvalue = (GCValue*)value;
-  gcvalue -= 1;
-  return (char) gcvalue->type;
+  switch (item->type)
+  {
+    case 'L':
+    case 'D':
+    case 'C':
+      break;
+    default: return; // no nested values to check.
+  }
+  if (*discard_queue == NULL)
+  {
+    *discard_queue = (GCQueue*) malloc(sizeof(GCQueue));
+    (*discard_queue)->next = NULL;
+  }
+
+  GCQueue* q = *discard_queue;
+  *discard_queue = q->next;
+  q->next = *queue;
+  q->value = item;
+  *queue = q;
+}
+
+void gc_run()
+{
+  printf("A\n");
+  int* pass_id_ptr = _gc_get_current_pass_id();
+  int pass_id = *pass_id_ptr;
+  GCQueue* queue = NULL;
+  GCValue* head = _gc_get_allocations();
+  GCValue* walker = head;
+  printf("B\n");
+  do
+  {
+    if (walker->mark == pass_id)
+    {
+      GCQueue* entry = (GCQueue*) malloc(sizeof(GCQueue));
+      entry->value = walker;
+      entry->next = queue;
+      queue = entry;
+    }
+    walker = walker->next;
+  } while (walker->next != head);
+  printf("C\n");
+
+  GCQueue* discard_queue = NULL;
+  while (queue != NULL)
+  {
+    GCQueue* t = queue;
+    queue = t->next;
+    GCValue* current = t->value;
+    t->next = discard_queue;
+    discard_queue = t;
+    switch (current->type)
+    {
+      case 'C':
+        {
+          void** value = (void**) (current + 1);
+          for (int i = 0; i < current->gc_field_count; ++i)
+          {
+            void* item = value[i];
+            if (item != NULL)
+            {
+              GCValue* gcitem = ((GCValue*)item) - 1;
+              if (gcitem->mark != pass_id)
+              {
+                gcitem->mark = pass_id;
+                _gc_add_to_queue(&discard_queue, &queue, gcitem);
+              }
+            }
+          }
+        }
+        break;
+      case 'L':
+        {
+          List* list = (List*) (current + 1);
+          for (int i = 0; i < list->length; ++i)
+          {
+            void* item = list->items[i];
+            if (item != NULL)
+            {
+              GCValue* gcitem = ((GCValue*)item) - 1;
+              if (gcitem->mark != pass_id)
+              {
+                gcitem->mark = pass_id;
+                _gc_add_to_queue(&discard_queue, &queue, gcitem);
+              }
+            }
+          }
+        }
+        break;
+      case 'D':
+        {
+          Dictionary* dict = (Dictionary*) (current + 1);
+          String** keys = dict->keys;
+          void** values = dict->values;
+          // Note that the actual string instance in the bucket is the same as the one in the
+          // keys list, even if it is overwritten.
+          for (int i = 0; i < dict->size; ++i)
+          {
+            GCValue* gckey = ((GCValue*)keys[i]) - 1;
+            GCValue* gcvalue = ((GCValue*)values[i]) - 1;
+            gckey->mark = pass_id;
+            if (gcvalue->mark != pass_id)
+            {
+              gcvalue->mark = pass_id;
+              _gc_add_to_queue(&discard_queue, &queue, gcvalue);
+            }
+          }
+        }
+        break;
+      default:
+        // ignore! no recursive data
+        break;
+    }
+  }
+  printf("D\n");
+
+  walker = head->next;
+  while (walker != head)
+  {
+    if (walker->mark != pass_id && !walker->save)
+    {
+      GCValue* prev = walker->prev;
+      GCValue* next = walker->next;
+      GCValue* remove_me = walker;
+      walker = prev;
+      next->prev = prev;
+      prev->next = next;
+      switch (remove_me->type)
+      {
+        case 'I':
+        case 'F':
+          free(remove_me);
+          break;
+        case 'S':
+          {
+            String* str = (String*) (remove_me + 1);
+            free(str->cstring);
+            free(remove_me);
+          }
+          break;
+        case 'L':
+          {
+            List* list = (List*) (remove_me + 1);
+            free(list->items);
+            free(remove_me);
+          }
+          break;
+        case 'D':
+          {
+            Dictionary* dict = (Dictionary*) (remove_me + 1);
+            free(dict->keys);
+            free(dict->values);
+            for (int i = 0; i < dict->bucket_length; ++i)
+            {
+              DictEntry* bucket = dict->buckets[i];
+              while (bucket != NULL)
+              {
+                DictEntry* next = bucket->next;
+                free(bucket);
+                bucket = next;
+              }
+            }
+            free(dict->buckets);
+            free(remove_me);
+          }
+          break;
+        case 'C':
+          {
+            printf("Maybe some callbacks for Complex types?\n");
+            void** value = (void**) (remove_me + 1);
+            free(remove_me);
+          }
+          break;
+      }
+    }
+    walker = walker->next;
+  }
+  printf("E\n");
+
+  while (discard_queue != NULL)
+  {
+    GCQueue* next = discard_queue->next;
+    free(discard_queue);
+    discard_queue = next;
+  }
+  printf("F\n");
 }
 
 #endif

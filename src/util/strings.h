@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "gc.h"
+#include "gcbase.h"
 #include "util.h"
 
 typedef struct _String {

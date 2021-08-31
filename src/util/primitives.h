@@ -2,7 +2,7 @@
 #define _UTIL_PRIMITIVES_H
 
 #include <stdlib.h>
-#include "gc.h"
+#include "gcbase.h"
 #include "util.h"
 
 typedef struct _Integer {

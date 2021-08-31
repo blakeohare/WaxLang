@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "gc.h"
+#include "gcbase.h"
 #include "lists.h"
 #include "strings.h"
 #include "util.h"
@@ -80,7 +80,8 @@ int _dict_get_index(Dictionary* dict, String* key, int create_if_missing)
   }
 
   int bucket_index = key->hash & (dict->bucket_length - 1);
-  for (DictEntry* walker = dict->buckets[bucket_index]; walker != NULL; walker = walker->next) {
+  for (DictEntry* walker = dict->buckets[bucket_index]; walker != NULL; walker = walker->next)
+  {
     if (string_equals(walker->key, key)) return walker->index;
   }
   

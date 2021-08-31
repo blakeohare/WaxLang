@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "strings.h"
-#include "gc.h"
+#include "gcbase.h"
 #include "util.h"
 
 typedef struct _List {
