@@ -7,7 +7,7 @@
 #include "lists.h"
 #include "valueutil.h"
 
-String* normalize_path(char* path)
+String* normalize_path(const char* path)
 {
   String* dot = new_string(".");
   String* dotdot = new_string("..");
@@ -43,14 +43,14 @@ String* normalize_path(char* path)
   return list_join(path_parts, new_string("/"));
 }
 
-int file_exists(char* path)
+int file_exists(const char* path)
 {
   String* npath = normalize_path(path);
   if (access(npath->cstring, F_OK) == 0) return 1;
   return 0;
 }
 
-String* file_read_text(char* path)
+String* file_read_text(const char* path)
 {
   String* npath = normalize_path(path);
   FILE* file = fopen(npath->cstring, "r");

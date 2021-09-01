@@ -70,6 +70,14 @@ void* gc_create_item(int size, char item_type)
   return (void*)payload;
 }
 
+void* gc_create_struct(int size, int field_count)
+{
+  void* item = gc_create_item(size, 'C');
+  GCValue* gc_item = ((GCValue*) item) - 1;
+  gc_item->gc_field_count = field_count;
+  return item;
+}
+
 char gc_get_type(void* value)
 {
   GCValue* gcvalue = (GCValue*)value;

@@ -14,19 +14,18 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  char* manifest_file_path = argv[1];
-  Dictionary* manifest = wax_manifest_load(manifest_file_path);
-  gc_run_with_single_saved_item(manifest);
-
-  String* error_key = new_string("@error");
-  if (dictionary_has_key(manifest, error_key))
+  ProjectManifest* manifest = wax_manifest_load(argv[1]);
+  if (manifest->has_error)
   {
-    printf("%s\n", ((String*)dictionary_get(manifest, error_key))->cstring);
-    return 0;
+    printf("%s\n", manifest->error->cstring);
   }
-
-  printf("Found this manifest: %s\n", value_to_string(manifest)->cstring);
-
+  else
+  {
+    List* gc_save_collection = new_list();
+    list_add(gc_save_collection, manifest);
+    gc_run_with_single_saved_item(gc_save_collection);
+  }
+  
   gc_shutdown();
 
   return 0;

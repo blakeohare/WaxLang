@@ -205,7 +205,7 @@ void gc_run()
           break;
         case 'C':
           {
-            printf("Maybe some callbacks for Complex types?\n");
+            // TODO: callbacks for complex types
             void** value = (void**) (remove_me + 1);
             free(remove_me);
           }

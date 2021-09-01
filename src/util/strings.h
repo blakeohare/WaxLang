@@ -233,6 +233,11 @@ String* string_replace(const char* value, const char* old_value, const char* new
   return str;
 }
 
+int string_equals_chars(String* str, const char* chars)
+{
+  return string_equals(str, new_string(chars));
+}
+
 int is_string(void* obj)
 {
   return gc_is_type(obj, 'S');
