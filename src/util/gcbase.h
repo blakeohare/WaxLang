@@ -77,6 +77,13 @@ char gc_get_type(void* value)
   return (char) gcvalue->type;
 }
 
+int gc_is_type(void* value, char type)
+{
+  if (value == NULL) return 0;
+  if (gc_get_type(value) == type) return 1;
+  return 0;
+}
+
 int* _gc_get_current_pass_id()
 {
   static int pass_id = 1;

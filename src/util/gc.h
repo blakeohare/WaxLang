@@ -63,13 +63,12 @@ void _gc_add_to_queue(GCQueue** discard_queue, GCQueue** queue, GCValue* item)
 
 void gc_run()
 {
-  printf("A\n");
   int* pass_id_ptr = _gc_get_current_pass_id();
   int pass_id = *pass_id_ptr;
   GCQueue* queue = NULL;
   GCValue* head = _gc_get_allocations();
   GCValue* walker = head;
-  printf("B\n");
+
   do
   {
     if (walker->mark == pass_id)
@@ -81,7 +80,6 @@ void gc_run()
     }
     walker = walker->next;
   } while (walker->next != head);
-  printf("C\n");
 
   GCQueue* discard_queue = NULL;
   while (queue != NULL)
@@ -154,7 +152,6 @@ void gc_run()
         break;
     }
   }
-  printf("D\n");
 
   walker = head->next;
   while (walker != head)
@@ -217,7 +214,6 @@ void gc_run()
     }
     walker = walker->next;
   }
-  printf("E\n");
 
   while (discard_queue != NULL)
   {
@@ -225,7 +221,19 @@ void gc_run()
     free(discard_queue);
     discard_queue = next;
   }
-  printf("F\n");
+}
+
+void gc_run_with_single_saved_item(void* item)
+{
+  gc_init_pass();
+  gc_tag_item(item);
+  gc_run();
+}
+
+void gc_shutdown()
+{
+  gc_init_pass();
+  gc_run();
 }
 
 #endif

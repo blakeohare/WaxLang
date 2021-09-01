@@ -106,10 +106,19 @@ int _dict_get_index(Dictionary* dict, String* key, int create_if_missing)
 // returns 1 if it's a collision/overwrite
 int dictionary_set(Dictionary* dict, String* key, void* value)
 {
-  int size = dict->size;
+  int original_size = dict->size;
   int index = _dict_get_index(dict, key, 1);
   dict->values[index] = value;
-  return size == dict->size ? 1 : 0;
+  if (dict->size > original_size)
+  {
+    // only overwrite the key if it was added so that the 
+    // actual string instance is the same in the DictEntry 
+    // as in the Key list so that garbage collection has
+    // fewer collections to step through.
+    dict->keys[index] = key; 
+    return 0;
+  }
+  return 1;
 }
 
 void* dictionary_get(Dictionary* dict, String* key)
@@ -127,6 +136,17 @@ List* dictionary_get_keys(Dictionary* dict)
     list_add(keys, dict->keys[i]);
   }
   return keys;
+}
+
+int dictionary_has_key(Dictionary* dict, String* key)
+{
+  int index = _dict_get_index(dict, key, 0);
+  return index == -1 ? 0 : 1;
+}
+
+int is_dictionary(void* obj)
+{
+  return gc_is_type(obj, 'D');
 }
 
 #endif

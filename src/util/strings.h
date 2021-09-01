@@ -130,14 +130,43 @@ String* string_builder_to_string_and_free(StringBuilder* sb)
   return output;
 }
 
-String* string_concat(char* a, char* b)
+String* string_concat(const char* a, const char* b)
 {
   StringBuilder* sb = new_string_builder();
   string_builder_append_chars(sb, a);
   string_builder_append_chars(sb, b);
-  String* output = string_builder_to_string(sb);
-  string_builder_free(sb);
-  return output;
+  return string_builder_to_string_and_free(sb);
+}
+
+String* string_concat3(const char* a, const char* b, const char* c)
+{
+  StringBuilder* sb = new_string_builder();
+  string_builder_append_chars(sb, a);
+  string_builder_append_chars(sb, b);
+  string_builder_append_chars(sb, c);
+  return string_builder_to_string_and_free(sb);
+}
+
+String* string_concat6(const char* a, const char* b, const char* c, const char* d, const char* e, const char* f)
+{
+  StringBuilder* sb = new_string_builder();
+  string_builder_append_chars(sb, a);
+  string_builder_append_chars(sb, b);
+  string_builder_append_chars(sb, c);
+  string_builder_append_chars(sb, d);
+  string_builder_append_chars(sb, e);
+  string_builder_append_chars(sb, f);
+  return string_builder_to_string_and_free(sb);
+}
+
+String* string_concat5(const char* a, const char* b, const char* c, const char* d, const char* e)
+{
+  return string_concat6(a, b, c, d, e, "");
+}
+
+String* string_concat4(const char* a, const char* b, const char* c, const char* d)
+{
+  return string_concat6(a, b, c, d, "", "");
 }
 
 int string_equals(String* a, String* b)
@@ -202,6 +231,11 @@ String* string_replace(const char* value, const char* old_value, const char* new
   String* str = string_builder_to_string(output);
   string_builder_free(output);
   return str;
+}
+
+int is_string(void* obj)
+{
+  return gc_is_type(obj, 'S');
 }
 
 #endif

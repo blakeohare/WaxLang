@@ -2,10 +2,9 @@
 #include "util/strings.h"
 #include "util/lists.h"
 #include "util/dictionaries.h"
-#include "util/json.h"
 #include "util/valueutil.h"
-#include "util/fileio.h"
 #include "util/gc.h"
+#include "wax/manifest.h"
 
 int main(int argc, char** argv)
 {
@@ -16,32 +15,19 @@ int main(int argc, char** argv)
   }
 
   char* manifest_file_path = argv[1];
-  String* manifest_file_content = file_read_text(manifest_file_path);
-  if (manifest_file_content == NULL)
+  Dictionary* manifest = wax_manifest_load(manifest_file_path);
+  gc_run_with_single_saved_item(manifest);
+
+  String* error_key = new_string("@error");
+  if (dictionary_has_key(manifest, error_key))
   {
-    printf("Manifest file does not exist: %s\n", manifest_file_path);
+    printf("%s\n", ((String*)dictionary_get(manifest, error_key))->cstring);
     return 0;
   }
-
-  int error_code;
-  int error_line;
-  int error_col;
-  
-  void* manifest = json_parse(manifest_file_content->cstring, &error_code, &error_line, &error_col);
-  if (error_code)
-  {
-    json_print_error(error_code, error_line, error_col);
-    return 0;
-  }
-
-  gc_init_pass();
-  gc_tag_item(manifest);
-  gc_run();
 
   printf("Found this manifest: %s\n", value_to_string(manifest)->cstring);
 
-  gc_init_pass();
-  gc_run();
-  
+  gc_shutdown();
+
   return 0;
 }

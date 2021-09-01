@@ -7,6 +7,7 @@
 #include "dictionaries.h"
 #include "strings.h"
 #include "util.h"
+#include "valueutil.h"
 
 #define JSON_OK 0
 #define JSON_ERROR_BAD_SYNTAX 1
@@ -24,6 +25,13 @@ typedef struct _JsonParseContext {
   int error_col;
   int error_line;
 } JsonParserContext;
+
+typedef struct _JsonParseResult {
+  void* value;
+  int error;
+  int line;
+  int col;
+} JsonParseResult;
 
 void* json_parse_thing(JsonParserContext* ctx);
 
@@ -278,21 +286,38 @@ void* json_parse_thing(JsonParserContext* ctx)
   }
 }
 
-void json_print_error(int error_code, int line, int col)
+String* json_get_error(JsonParseResult result)
 {
-  switch (error_code)
+  int line = result.line;
+  int col = result.col;
+  String* line_str = value_to_string(wrap_int(line));
+  String* col_str = value_to_string(wrap_int(col));
+  String* msg = NULL;
+  switch (result.error)
   {
-    case JSON_OK: return;
-    case JSON_ERROR_BAD_SYNTAX: printf("JSON Error: Bad syntax on line %d, col %d.\n", line, col); break;
-    case JSON_ERROR_EOF: printf("JSON Error: Unexpected EOF on line %d, col %d.\n", line, col); break;
-    case JSON_ERROR_OBJECT_KEY_COLLISION: printf("JSON Error: Object key collision on line %d, col %d.\n", line, col); break;
-    case JSON_ERROR_INVALID_STRING_ESCAPE_SEQUENCE: printf("JSON Error: Invalid string escape sequence on line %d, col %d.\n", line, col); break;
-    default: printf("JSON Error: Unknown JSON error on line %d, col %d.\n", line, col); break;
+    case JSON_OK: return NULL;
+    case JSON_ERROR_BAD_SYNTAX: msg = new_string("Bad syntax"); break;
+    case JSON_ERROR_EOF: msg = new_string("Unexpected EOF"); break;
+    case JSON_ERROR_OBJECT_KEY_COLLISION: msg = new_string("Object key collision"); break;
+    case JSON_ERROR_INVALID_STRING_ESCAPE_SEQUENCE: msg = new_string("Invalid string escape sequence"); break;
+    default: msg = new_string("Unknown JSON error"); break;
+  }
+  return string_concat6(msg->cstring, " on line ", line_str->cstring, ", col ", col_str->cstring, ".");
+}
+
+void json_print_error(JsonParseResult result)
+{
+  String* output = json_get_error(result);
+  if (output != NULL)
+  {
+    printf("JSON Error: %s\n", output->cstring);
   }
 }
 
-void* json_parse(char* data, int* error_code, int* error_line, int* error_col)
+JsonParseResult json_parse(char* data)
 {
+  JsonParseResult result;
+  
   String* str = string_replace(data, "\r\n", "\n");
   str = string_replace(str->cstring, "\r", "\n");
 
@@ -307,12 +332,19 @@ void* json_parse(char* data, int* error_code, int* error_line, int* error_col)
   void* output = json_parse_thing(&ctx);
   if (ctx.error_code)
   {
-    *error_code = ctx.error_code;
-    *error_line = ctx.error_line;
-    *error_col = ctx.error_col;
-    return NULL;
+    result.error = ctx.error_code;
+    result.line = ctx.error_line;
+    result.col = ctx.error_col;
+    result.value = NULL;
   }
-  return output;
+  else
+  {
+    result.error = 0;
+    result.line = 0;
+    result.col = 0;
+    result.value = output;
+  }
+  return result;
 }
 
 #endif

@@ -71,4 +71,17 @@ void* list_pop(List* list)
   return list->items[--list->length];
 }
 
+void list_push_all(List* list, List* items) 
+{
+  for (int i = 0; i < items->length; ++i)
+  {
+    list_add(list, items->items[i]);
+  }
+}
+
+int is_list(void* obj)
+{
+  return gc_is_type(obj, 'L');
+}
+
 #endif
