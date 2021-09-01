@@ -7,11 +7,13 @@
 #include "../util/lists.h"
 #include "../util/strings.h"
 #include "../util/gcbase.h"
+#include "../util/gc.h"
 
 enum Lang { LANG_PYTHON, LANG_C, LANG_JAVASCRIPT, LANG_PHP, LANG_UNKNOWN };
 enum ModuleAction { ACTION_BUNDLE, ACTION_EXTENSION, ACTION_SERVICE, ACTION_UNKNOWN };
 
 #define MODULE_METADATA_GC_FIELDS 2
+#define MODULE_METADATA_NAME "ModuleMetadata"
 typedef struct _ModuleMetadata {
   String* name;
   String* src;
@@ -21,6 +23,7 @@ typedef struct _ModuleMetadata {
 } ModuleMetadata;
 
 #define PROJECT_MANIFEST_GC_FIELDS 4
+#define PROJECT_MANIFEST_NAME "ProjectManifest"
 typedef struct _ProjectManifest {
   List* modules;
   String* output_path;
@@ -31,7 +34,7 @@ typedef struct _ProjectManifest {
 
 ProjectManifest* new_project_manifest(String* output_path, String* output_type)
 {
-  ProjectManifest* pm = gc_create_struct(sizeof(ProjectManifest), PROJECT_MANIFEST_GC_FIELDS);
+  ProjectManifest* pm = (ProjectManifest*) gc_create_struct(sizeof(ProjectManifest), PROJECT_MANIFEST_NAME, PROJECT_MANIFEST_GC_FIELDS);
   pm->output_path = output_path;
   pm->output_type = output_type;
   pm->modules = new_list();
@@ -42,7 +45,7 @@ ProjectManifest* new_project_manifest(String* output_path, String* output_type)
 
 ModuleMetadata* new_module_metadata(String* name, String* src, String* action, String* lang)
 {
-  ModuleMetadata* mm = gc_create_struct(sizeof(ModuleMetadata), MODULE_METADATA_GC_FIELDS);
+  ModuleMetadata* mm = (ModuleMetadata*) gc_create_struct(sizeof(ModuleMetadata), MODULE_METADATA_NAME, MODULE_METADATA_GC_FIELDS);
   mm->name = name;
   mm->src = src;
   
@@ -129,7 +132,7 @@ Dictionary* wax_manifest_load_impl(const char* path)
   return manifest;
 }
 
-ProjectManifest* wax_manifest_load(const char* path)
+ProjectManifest* _wax_manifest_load_verifier(const char* path)
 {
   Dictionary* manifest = wax_manifest_load_impl(path);
   String* str_error = new_string("@error");
@@ -215,4 +218,14 @@ ProjectManifest* wax_manifest_load(const char* path)
   return output;
 }
 
+ProjectManifest* wax_manifest_load(const char* path)
+{
+  ProjectManifest* manifest = _wax_manifest_load_verifier(path);
+
+  gc_save_item(manifest);
+  gc_perform_pass();
+  gc_release_item(manifest);
+
+  return manifest;
+}
 #endif

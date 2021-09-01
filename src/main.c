@@ -15,18 +15,27 @@ int main(int argc, char** argv)
   }
 
   ProjectManifest* manifest = wax_manifest_load(argv[1]);
+  
   if (manifest->has_error)
   {
     printf("%s\n", manifest->error->cstring);
   }
   else
   {
-    List* gc_save_collection = new_list();
-    list_add(gc_save_collection, manifest);
-    gc_run_with_single_saved_item(gc_save_collection);
+    gc_save_item(manifest);
+    
+    List* modules = manifest->modules;
+    printf("Found %d modules\n", modules->length);
+    for (int i = 0; i < modules->length; ++i)
+    {
+      ModuleMetadata* mm = (ModuleMetadata*) modules->items[i];
+      printf("TODO: compile %s from %s\n", mm->name->cstring, mm->src->cstring);
+    }
+
+    gc_release_item(manifest);
   }
   
-  gc_shutdown();
+  gc_perform_pass();
 
   return 0;
 }

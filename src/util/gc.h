@@ -71,7 +71,14 @@ void gc_run()
 
   do
   {
-    if (walker->mark == pass_id)
+    int tagged = 0;
+    if (walker->mark == pass_id) tagged = 1;
+    else if (walker->save > 0)
+    {
+      int type = walker->type;
+      if (type == 'L' || type == 'D' || type == 'C') tagged = 1;
+    }
+    if (tagged)
     {
       GCQueue* entry = (GCQueue*) malloc(sizeof(GCQueue));
       entry->value = walker;
@@ -137,12 +144,16 @@ void gc_run()
           for (int i = 0; i < dict->size; ++i)
           {
             GCValue* gckey = ((GCValue*)keys[i]) - 1;
-            GCValue* gcvalue = ((GCValue*)values[i]) - 1;
             gckey->mark = pass_id;
-            if (gcvalue->mark != pass_id)
+
+            if (values[i] != NULL)
             {
-              gcvalue->mark = pass_id;
-              _gc_add_to_queue(&discard_queue, &queue, gcvalue);
+              GCValue* gcvalue = ((GCValue*)values[i]) - 1;
+              if (gcvalue->mark != pass_id)
+              {
+                gcvalue->mark = pass_id;
+                _gc_add_to_queue(&discard_queue, &queue, gcvalue);
+              }
             }
           }
         }
@@ -156,7 +167,7 @@ void gc_run()
   walker = head->next;
   while (walker != head)
   {
-    if (walker->mark != pass_id && !walker->save)
+    if (walker->mark != pass_id && walker->save == 0)
     {
       GCValue* prev = walker->prev;
       GCValue* next = walker->next;
@@ -223,6 +234,18 @@ void gc_run()
   }
 }
 
+void gc_save_item(void* item)
+{
+  GCValue* gc_item = ((GCValue*) item) - 1;
+  gc_item->save++;
+}
+
+void gc_release_item(void* item)
+{
+  GCValue* gc_item = ((GCValue*) item) - 1;
+  gc_item->save--;
+}
+
 void gc_run_with_single_saved_item(void* item)
 {
   gc_init_pass();
@@ -230,7 +253,7 @@ void gc_run_with_single_saved_item(void* item)
   gc_run();
 }
 
-void gc_shutdown()
+void gc_perform_pass()
 {
   gc_init_pass();
   gc_run();

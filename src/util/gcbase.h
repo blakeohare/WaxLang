@@ -18,10 +18,12 @@
 */
 
 typedef struct _GCValue {
-  int mark;
-  int gc_field_count;
   struct _GCValue* next;
   struct _GCValue* prev;
+  const char* name;
+  int id;
+  int mark;
+  int gc_field_count;
   int save;
   int type;
 } GCValue;
@@ -49,7 +51,9 @@ void* gc_create_item(int size, char item_type)
   item->mark = 0;
   item->type = item_type;
   item->gc_field_count = 0; // if something needs to be stored here, the instance initializer will set it.
+  item->name = NULL;
   item->save = 0;
+  item->id = 0;
 
   GCValue* head = _gc_get_allocations();
   if (head->next == head)
@@ -70,11 +74,15 @@ void* gc_create_item(int size, char item_type)
   return (void*)payload;
 }
 
-void* gc_create_struct(int size, int field_count)
+void* gc_create_struct(int size, const char* name, int field_count)
 {
+  static int obj_id = 1;
+
   void* item = gc_create_item(size, 'C');
   GCValue* gc_item = ((GCValue*) item) - 1;
   gc_item->gc_field_count = field_count;
+  gc_item->name = name;
+  gc_item->id = obj_id++;
   return item;
 }
 
