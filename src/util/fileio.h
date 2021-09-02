@@ -3,8 +3,16 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef WINDOWS
+#include <strsafe.h>
+#include <tchar.h>
+#include <windows.h>
+#include <fileapi.h>
+#else
 #include <unistd.h>
 #include <dirent.h>
+#endif
 
 #include "strings.h"
 #include "lists.h"
@@ -12,8 +20,12 @@
 
 String* _fileio_to_system_path(const char* path)
 {
-  // TODO: for windows, this will have to do replacements.
+#ifdef WINDOWS
+  List* parts = string_split(path, "/");
+  return list_join(parts, new_string("\\"));
+#else
   return new_string(path);
+#endif
 }
 
 String* normalize_path(const char* path)
@@ -55,22 +67,42 @@ String* normalize_path(const char* path)
 
 int file_exists(const char* path)
 {
-  String* npath = normalize_path(path);
-  if (access(_fileio_to_system_path(npath->cstring)->cstring, F_OK) == 0) return 1;
+  char* npath = _fileio_to_system_path(normalize_path(path)->cstring)->cstring;
+#ifdef WINDOWS
+  struct stat buffer;
+  if (stat(npath, &buffer) == 0) return 1;
+#else
+  if (access(npath, F_OK) == 0) return 1;
+#endif
   return 0;
 }
 
 int is_directory(const char* path)
 {
+#ifdef WINDOWS
+  TCHAR szPath[MAX_PATH];
+  size_t path_len;
+  StringCchLength(path, MAX_PATH, &path_len);
+  if (path_len > MAX_PATH) return NULL;
+  StringCchCopy(szPath, MAX_PATH, path);
+  DWORD dwAttrib = GetFileAttributes(szPath);
+  return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
   struct stat statbuf;
   if (stat(_fileio_to_system_path(path)->cstring, &statbuf) != 0) return 0;
   return S_ISDIR(statbuf.st_mode);
+#endif
 }
 
 String* file_read_text(const char* path)
 {
-  String* npath = normalize_path(path);
-  FILE* file = fopen(_fileio_to_system_path(npath->cstring)->cstring, "r");
+  char* npath = _fileio_to_system_path(normalize_path(path)->cstring)->cstring;
+#ifdef WINDOWS
+  FILE* file;
+  if (fopen_s(&file, npath, "r") != 0) return NULL;
+#else
+  FILE* file = fopen(npath, "r");
+#endif
   if (!file) return NULL;
   int bytes_read = 0;
   char buffer[1025];
@@ -95,6 +127,35 @@ String* file_read_text(const char* path)
 List* directory_list(const char* path)
 {
   List* output = new_list();
+#ifdef WINDOWS
+  size_t path_len;
+  TCHAR szDir[MAX_PATH];
+  StringCchLength(path, MAX_PATH, &path_len);
+  if (path_len + 3 > MAX_PATH) return NULL;
+  WIN32_FIND_DATA ffd;
+  HANDLE hFind = INVALID_HANDLE_VALUE;
+  StringCchCopy(szDir, MAX_PATH, path);
+  StringCchCat(szDir, MAX_PATH, TEXT("\\*"));
+  
+  hFind = FindFirstFile(szDir, &ffd);
+  if (hFind != INVALID_HANDLE_VALUE) {
+    do
+    {
+      // HACK: how to convert from wchar?
+      StringBuilder* sb = new_string_builder();
+      for (int i = 0; ffd.cFileName[i] != 0; i ++) {
+          char c = ffd.cFileName[i];
+          string_builder_append_char(sb, c);
+      }
+      String* filename = string_builder_to_string_and_free(sb);
+      if (!string_equals_chars(filename, ".") && !string_equals_chars(filename, "..")) {
+        list_add(output, filename);
+      }
+    }
+    while (FindNextFile(hFind, &ffd) != 0);
+  }
+  FindClose(hFind);
+#else
   DIR* dir;
   struct dirent* entry;
   dir = opendir(_fileio_to_system_path(path)->cstring);
@@ -108,6 +169,7 @@ List* directory_list(const char* path)
     }
     closedir(dir);
   }
+#endif
   return output;
 }
 

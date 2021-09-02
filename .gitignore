@@ -3,3 +3,5 @@
 .vs
 waxcli
 winbuild
+src/WaxLang.vcxproj.user
+src/vc140.pdb
