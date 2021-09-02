@@ -5,6 +5,7 @@
 #include "util/valueutil.h"
 #include "util/gc.h"
 #include "wax/manifest.h"
+#include "wax/compiler.h"
 
 int main(int argc, char** argv)
 {
@@ -25,13 +26,12 @@ int main(int argc, char** argv)
     gc_save_item(manifest);
     
     List* modules = manifest->modules;
-    printf("Found %d modules\n", modules->length);
     for (int i = 0; i < modules->length; ++i)
     {
       ModuleMetadata* mm = (ModuleMetadata*) modules->items[i];
       if (mm->lang == LANG_WAX)
       {
-        printf("TODO: compile wax from %s\n", mm->src->cstring);
+        wax_compile(manifest, mm);
       }
       else
       {

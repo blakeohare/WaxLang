@@ -20,24 +20,20 @@ typedef struct _StringBuilder {
 
 String* new_string(const char* value)
 {
-  static String* EMPTY = NULL;
   static String** SINGLE_CHARS = NULL;
-  if (EMPTY == NULL)
+  if (SINGLE_CHARS == NULL)
   {
-    EMPTY = (String*) gc_create_item(sizeof(String), 'S');
-    EMPTY->length = 0;
-    EMPTY->hash = 1319;
-    EMPTY->cstring = (char*) malloc_clean(sizeof(char));
-    EMPTY->cstring[0] = '\0';
     SINGLE_CHARS = (String**) malloc_clean(sizeof(String*) * 128);
     for (int i = 0; i < 128; ++i)
     {
       String* s = (String*) gc_create_item(sizeof(String), 'S');
-      s->length = 1;
+      s->length = i == 0 ? 0 : 1;
       s->hash = value[0];
       s->cstring = (char*) malloc_clean(sizeof(char) * 2);
-      s->cstring[0] = i;
+      s->cstring[0] = (char) i;
       s->cstring[1] = '\0';
+      GCValue* gc_str = ((GCValue*)s) - 1;
+      gc_str->save = 1;
       SINGLE_CHARS[i] = s;
     }
   }
@@ -51,10 +47,8 @@ String* new_string(const char* value)
   }
   if (hash == 0) hash = 1319;
 
-  if (len <= 1)
-  {
-    if (len == 0) return EMPTY;
-    if (value[0] > 0) return SINGLE_CHARS[value[0]];
+  if (len <= 1 && value[0] >= 0) {
+    return SINGLE_CHARS[(int) value[0]];
   }
 
   char* cstring = (char*) malloc_clean(sizeof(char) * (len + 1));
@@ -241,6 +235,42 @@ int string_equals_chars(String* str, const char* chars)
 int is_string(void* obj)
 {
   return gc_is_type(obj, 'S');
+}
+
+String* string_to_lower(String* str)
+{
+  int len = str->length;
+  char* sb = (char*) malloc(sizeof(char) * (len + 1));
+  const char* str_chars = str->cstring;
+  char c;
+  for (int i = 0; i < len; ++i)
+  {
+    c = str_chars[i];
+    if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
+    sb[i] = c;
+  }
+  sb[len] = '\0';
+  String* output = new_string(sb);
+  free(sb);
+  return output;
+}
+
+int string_ends_with(String* str, String* chars)
+{
+  if (chars->length >= str->length) return string_equals(str, chars);
+  if (chars->length == 0) return 1;
+  int a_last = str->length - 1;
+  int b_last = chars->length - 1;
+  const char* a = str->cstring;
+  const char* b = chars->cstring;
+  if (a[a_last] != b[b_last]) return 0;
+  int a_index = str->length - chars->length;
+  int b_index = 0;
+  while (b_index < b_last)
+  {
+    if (a[a_index++] != b[b_index++]) return 0;
+  }
+  return 1;
 }
 
 #endif
