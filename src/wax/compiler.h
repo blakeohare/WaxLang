@@ -29,7 +29,7 @@ Dictionary* wax_compiler_get_files(const char* path)
 void wax_compile(ProjectManifest* manifest, ModuleMetadata* module)
 {
   Dictionary* src_files = wax_compiler_get_files(module->src->cstring);
-  if (src_files == NULL) 
+  if (src_files == NULL || src_files->size == 0) 
   {
     printf("Module is empty!\n");
     return;

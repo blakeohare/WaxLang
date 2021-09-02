@@ -77,16 +77,37 @@ int file_exists(const char* path)
   return 0;
 }
 
+#ifdef WINDOWS
+TCHAR* _fileio_make_tchar_buffer(const char* path, const char* suffix)
+{
+    // HACK: not sure why the proper way isn't working
+    char* npath = _fileio_to_system_path(normalize_path(path)->cstring)->cstring;
+    int path_len = strlen(npath);
+    int suffix_len = suffix == NULL ? 0 : strlen(suffix);
+    TCHAR* buffer = (TCHAR*)malloc_clean(sizeof(TCHAR) * (MAX_PATH + 1));
+    char* copy_this = npath;
+    int j = 0;
+    for (int i = 0; i < path_len + suffix_len; ++i) {
+        if (i == path_len) {
+            copy_this = suffix;
+            j = 0;
+        }
+        buffer[i] = copy_this[j++];
+    }
+    return buffer;
+}
+#endif
+
 int is_directory(const char* path)
 {
 #ifdef WINDOWS
-  TCHAR szPath[MAX_PATH];
-  size_t path_len;
-  StringCchLength(path, MAX_PATH, &path_len);
-  if (path_len > MAX_PATH) return NULL;
-  StringCchCopy(szPath, MAX_PATH, path);
+  TCHAR* szPath = _fileio_make_tchar_buffer(path, NULL);
+  if (szPath == NULL) return 0;
   DWORD dwAttrib = GetFileAttributes(szPath);
-  return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+  free(szPath);
+  if (dwAttrib == INVALID_FILE_ATTRIBUTES) return 0;
+  int is_dir = (dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != 0;
+  return is_dir;
 #else
   struct stat statbuf;
   if (stat(_fileio_to_system_path(path)->cstring, &statbuf) != 0) return 0;
@@ -128,20 +149,14 @@ List* directory_list(const char* path)
 {
   List* output = new_list();
 #ifdef WINDOWS
-  size_t path_len;
-  TCHAR szDir[MAX_PATH];
-  StringCchLength(path, MAX_PATH, &path_len);
-  if (path_len + 3 > MAX_PATH) return NULL;
+  TCHAR* szDir = _fileio_make_tchar_buffer(path, "\\*");
+  if (szDir == NULL) return NULL;
   WIN32_FIND_DATA ffd;
   HANDLE hFind = INVALID_HANDLE_VALUE;
-  StringCchCopy(szDir, MAX_PATH, path);
-  StringCchCat(szDir, MAX_PATH, TEXT("\\*"));
-  
   hFind = FindFirstFile(szDir, &ffd);
   if (hFind != INVALID_HANDLE_VALUE) {
-    do
-    {
-      // HACK: how to convert from wchar?
+    do {
+      // TODO: There's some data loss here for wide characters.
       StringBuilder* sb = new_string_builder();
       for (int i = 0; ffd.cFileName[i] != 0; i ++) {
           char c = ffd.cFileName[i];
@@ -155,10 +170,11 @@ List* directory_list(const char* path)
     while (FindNextFile(hFind, &ffd) != 0);
   }
   FindClose(hFind);
+  free(szDir);
 #else
   DIR* dir;
   struct dirent* entry;
-  dir = opendir(_fileio_to_system_path(path)->cstring);
+  dir = opendir(npath);
   if (dir)
   {
     while ((entry = readdir(dir)) != NULL)
