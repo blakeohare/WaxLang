@@ -9,8 +9,8 @@
 #include "../util/gcbase.h"
 #include "../util/gc.h"
 
-enum Lang { LANG_PYTHON, LANG_C, LANG_JAVASCRIPT, LANG_PHP, LANG_UNKNOWN };
-enum ModuleAction { ACTION_BUNDLE, ACTION_EXTENSION, ACTION_SERVICE, ACTION_UNKNOWN };
+enum Lang { LANG_UNKNOWN, LANG_WAX, LANG_PYTHON, LANG_C, LANG_JAVASCRIPT, LANG_PHP };
+enum ModuleAction { ACTION_UNKNOWN, ACTION_BUNDLE, ACTION_EXTENSION, ACTION_SERVICE };
 
 #define MODULE_METADATA_GC_FIELDS 2
 #define MODULE_METADATA_NAME "ModuleMetadata"
@@ -48,13 +48,14 @@ ModuleMetadata* new_module_metadata(String* name, String* src, String* action, S
   ModuleMetadata* mm = (ModuleMetadata*) gc_create_struct(sizeof(ModuleMetadata), MODULE_METADATA_NAME, MODULE_METADATA_GC_FIELDS);
   mm->name = name;
   mm->src = src;
-  
+
   if (string_equals_chars(action, "bundle")) mm->action = ACTION_BUNDLE; 
   else if (string_equals_chars(action, "extension")) mm->action = ACTION_EXTENSION;
   else if (string_equals_chars(action, "service")) mm->action = ACTION_SERVICE;
   else mm->action = ACTION_UNKNOWN;
 
-  if (string_equals_chars(lang, "python")) mm->lang = LANG_PYTHON;
+  if (string_equals_chars(lang, "wax")) mm->lang = LANG_WAX;
+  else if (string_equals_chars(lang, "python")) mm->lang = LANG_PYTHON;
   else if (string_equals_chars(lang, "c")) mm->lang = LANG_C;
   else if (string_equals_chars(lang, "javascript")) mm->lang = LANG_JAVASCRIPT;
   else if (string_equals_chars(lang, "php")) mm->lang = LANG_PHP;
@@ -85,6 +86,8 @@ Dictionary* wax_manifest_load_impl(const char* path)
 {
   String* str_inherit = new_string("inherit");
   String* str_error = new_string("@error");
+  String* str_module_targets = new_string("moduleTargets");
+  String* str_src = new_string("src");
 
   if (!file_exists(path))
     return wax_manifest_make_error_dict(string_concat3("Could not find file: '", path, "'"));
@@ -99,8 +102,28 @@ Dictionary* wax_manifest_load_impl(const char* path)
 
   if (!is_dictionary(json_result.value))
     return wax_manifest_make_error_dict(string_concat3("JSON error: '", path, "' does not contain an object as its root JSON value."));
-  
+
   Dictionary* manifest = (Dictionary*) json_result.value;
+
+  // All the src paths must be adjusted relative to the current working directory
+  if (is_list(dictionary_get(manifest, str_module_targets)))
+  {
+    List* module_targets = (List*) dictionary_get(manifest, str_module_targets);
+    for (int i = 0; i < module_targets->length; ++i)
+    {
+      if (is_dictionary(list_get(module_targets, i)))
+      {
+        Dictionary* module_target = (Dictionary*) list_get(module_targets, i);
+        if (is_string(dictionary_get(module_target, str_src)))
+        {
+          String* src_path_raw = (String*) dictionary_get(module_target, str_src);
+          String* src_path_adjusted = normalize_path(string_concat3(path, "/../", src_path_raw->cstring)->cstring);
+          dictionary_set(module_target, str_src, src_path_adjusted);
+        }
+      }
+    }
+  }
+
   void* inherit_path = dictionary_get(manifest, str_inherit);
   if (inherit_path != NULL)
   {
@@ -111,7 +134,6 @@ Dictionary* wax_manifest_load_impl(const char* path)
 
     if (dictionary_has_key(parent_manifest, str_error)) return parent_manifest;
     List* keys = dictionary_get_keys(manifest);
-    String* str_module_targets = new_string("moduleTargets");
     for (int i = 0; i < keys->length; ++i)
     {
       String* key = list_get_string(keys, i);

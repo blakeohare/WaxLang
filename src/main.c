@@ -29,7 +29,14 @@ int main(int argc, char** argv)
     for (int i = 0; i < modules->length; ++i)
     {
       ModuleMetadata* mm = (ModuleMetadata*) modules->items[i];
-      printf("TODO: compile %s from %s\n", mm->name->cstring, mm->src->cstring);
+      if (mm->lang == LANG_WAX)
+      {
+        printf("TODO: compile wax from %s\n", mm->src->cstring);
+      }
+      else
+      {
+        printf("TODO: wrap project %s from %s\n", mm->name->cstring, mm->src->cstring);
+      }
     }
 
     gc_release_item(manifest);
