@@ -174,7 +174,7 @@ List* directory_list(const char* path)
 #else
   DIR* dir;
   struct dirent* entry;
-  dir = opendir(npath);
+  dir = opendir(_fileio_to_system_path(path)->cstring);
   if (dir)
   {
     while ((entry = readdir(dir)) != NULL)
