@@ -28,11 +28,9 @@ typedef struct _GCValue {
   int type;
 } GCValue;
 
-GCValue* _gc_get_allocations()
-{
+GCValue* _gc_get_allocations() {
   static GCValue* alloc_head = NULL;
-  if (alloc_head == NULL)
-  {
+  if (alloc_head == NULL) {
     alloc_head = (GCValue*) malloc_clean(sizeof(GCValue));
     alloc_head->mark = 0;
     alloc_head->gc_field_count = 0;
@@ -44,8 +42,7 @@ GCValue* _gc_get_allocations()
   return alloc_head;
 }
 
-void* gc_create_item(int size, char item_type)
-{
+void* gc_create_item(int size, char item_type) {
   GCValue* item = (GCValue*) malloc_clean(size + sizeof(GCValue));
   GCValue* payload = item + 1;
   item->mark = 0;
@@ -56,15 +53,12 @@ void* gc_create_item(int size, char item_type)
   item->id = 0;
 
   GCValue* head = _gc_get_allocations();
-  if (head->next == head)
-  {
+  if (head->next == head) {
     head->next = item;
     head->prev = item;
     item->next = head;
     item->prev = head;
-  }
-  else
-  {
+  } else {
     GCValue* next = head->next;
     item->next = next;
     next->prev = item;
@@ -74,8 +68,7 @@ void* gc_create_item(int size, char item_type)
   return (void*)payload;
 }
 
-void* gc_create_struct(int size, const char* name, int field_count)
-{
+void* gc_create_struct(int size, const char* name, int field_count) {
   static int obj_id = 1;
 
   void* item = gc_create_item(size, 'C');
@@ -86,25 +79,21 @@ void* gc_create_struct(int size, const char* name, int field_count)
   return item;
 }
 
-char gc_get_type(void* value)
-{
+char gc_get_type(void* value) {
   GCValue* gcvalue = (GCValue*)value;
   gcvalue -= 1;
   return (char) gcvalue->type;
 }
 
-int gc_is_type(void* value, char type)
-{
+int gc_is_type(void* value, char type) {
   if (value == NULL) return 0;
   if (gc_get_type(value) == type) return 1;
   return 0;
 }
 
-int* _gc_get_current_pass_id()
-{
+int* _gc_get_current_pass_id() {
   static int pass_id = 1;
   return &pass_id;
 }
-
 
 #endif

@@ -13,8 +13,7 @@ typedef struct _List {
   void** items;
 } List;
 
-List* new_list()
-{
+List* new_list() {
   List* list = (List*) gc_create_item(sizeof(List), 'L');
   list->length = 0;
   list->capacity = 0;
@@ -22,17 +21,12 @@ List* new_list()
   return list;
 }
 
-void list_add(List* list, void* value)
-{
-  if (list->length == list->capacity)
-  {
-    if (list->capacity == 0)
-    {
+void list_add(List* list, void* value) {
+  if (list->length == list->capacity) {
+    if (list->capacity == 0) {
       list->items = (void**) malloc_ptr_array(4);
       list->capacity = 4;
-    }
-    else
-    {
+    } else {
       int new_capacity = list->capacity * 2;
       if (new_capacity < 10) new_capacity = 10;
       void** items = (void**) malloc_ptr_array(new_capacity);
@@ -46,41 +40,33 @@ void list_add(List* list, void* value)
   list->items[list->length++] = value;
 }
 
-void* list_get(List* list, int index)
-{
+void* list_get(List* list, int index) {
   return list->items[index];
 }
 
-String* list_get_string(List* list, int index)
-{
+String* list_get_string(List* list, int index) {
   return (String*) list->items[index];
 }
 
-void* list_get_last(List* list)
-{
+void* list_get_last(List* list) {
   return list->items[list->length - 1];
 }
 
-String* list_get_last_string(List* list)
-{
+String* list_get_last_string(List* list) {
   return (String*) list->items[list->length - 1];
 }
 
-void* list_pop(List* list)
-{
+void* list_pop(List* list) {
   return list->items[--list->length];
 }
 
-void list_push_all(List* list, List* items) 
-{
-  for (int i = 0; i < items->length; ++i)
-  {
+void list_push_all(List* list, List* items) {
+  for (int i = 0; i < items->length; ++i) {
     list_add(list, items->items[i]);
   }
 }
 
-int is_list(void* obj)
-{
+int is_list(void* obj) {
   return gc_is_type(obj, 'L');
 }
 

@@ -17,16 +17,13 @@ typedef struct _Boolean {
   int value;
 } Boolean;
 
-Integer* wrap_int(int value)
-{
+Integer* wrap_int(int value) {
   static int initialized = 0;
   static Integer** ints = NULL;
-  if (!initialized)
-  {
+  if (!initialized) {
     ints = (Integer**) malloc_clean(sizeof(Integer*) * 2048);
     initialized = 1;
-    for (int i = 0; i < 2048; ++i)
-    {
+    for (int i = 0; i < 2048; ++i) {
       Integer* n = (Integer*) gc_create_item(sizeof(Integer), 'I');
       n->value = i - 1024;
       GCValue* gcn = ((GCValue*)n) - 1;
@@ -42,22 +39,18 @@ Integer* wrap_int(int value)
   return i;
 }
 
-Float* wrap_float(double value)
-{
+Float* wrap_float(double value) {
   static Float* ZERO = NULL;
   static Float* ONE = NULL;
-  if (ZERO == NULL)
-  {
-    for (int i = 0; i < 2; ++i)
-    {
+  if (ZERO == NULL) {
+    for (int i = 0; i < 2; ++i) {
       Float* f = (Float*) gc_create_item(sizeof(Float), 'F');
       f->value = i + 0.0;
       GCValue* gcf = ((GCValue*)f) - 1;
       gcf->save = 1;
     }
   }
-  if (value <= 1.0)
-  {
+  if (value <= 1.0) {
     if (value == 0) return ZERO;
     if (value == 1) return ONE;
   }
@@ -66,14 +59,11 @@ Float* wrap_float(double value)
   return f;
 }
 
-Boolean* wrap_bool(int value)
-{
+Boolean* wrap_bool(int value) {
   static Boolean* TRUE = NULL;
   static Boolean* FALSE = NULL;
-  if (TRUE == NULL)
-  {
-    for (int i = 0; i < 2; ++i)
-    {
+  if (TRUE == NULL) {
+    for (int i = 0; i < 2; ++i) {
       Boolean* b = (Boolean*) gc_create_item(sizeof(Boolean), 'B');
       GCValue* gcb = ((GCValue*)b) - 1;
       b->value = i == 1;
@@ -85,18 +75,15 @@ Boolean* wrap_bool(int value)
   return value ? TRUE : FALSE;
 }
 
-void* get_null()
-{
+void* get_null() {
   static void* NULL_VALUE = NULL;
-  if (NULL_VALUE == NULL)
-  {
+  if (NULL_VALUE == NULL) {
     NULL_VALUE = gc_create_item(0, 'N');
   }
   return NULL_VALUE;
 }
 
-int is_null(void* value)
-{
+int is_null(void* value) {
   return (((GCValue*)value) - 1)->type == 'N';
 }
 

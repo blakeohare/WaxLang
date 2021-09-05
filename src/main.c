@@ -7,34 +7,25 @@
 #include "wax/manifest.h"
 #include "wax/compiler.h"
 
-int main(int argc, char** argv)
-{
-  if (argc != 2)
-  {
+int main(int argc, char** argv) {
+  if (argc != 2) {
     printf("Usage: waxcli manifest-file.json\n");
     return 0;
   }
 
   ProjectManifest* manifest = wax_manifest_load(argv[1]);
   
-  if (manifest->has_error)
-  {
+  if (manifest->has_error) {
     printf("%s\n", manifest->error->cstring);
-  }
-  else
-  {
+  } else {
     gc_save_item(manifest);
     
     List* modules = manifest->modules;
-    for (int i = 0; i < modules->length; ++i)
-    {
+    for (int i = 0; i < modules->length; ++i) {
       ModuleMetadata* mm = (ModuleMetadata*) modules->items[i];
-      if (mm->lang == LANG_WAX)
-      {
+      if (mm->lang == LANG_WAX) {
         wax_compile(manifest, mm);
-      }
-      else
-      {
+      } else {
         printf("TODO: wrap project %s from %s\n", mm->name->cstring, mm->src->cstring);
       }
     }

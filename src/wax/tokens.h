@@ -24,8 +24,7 @@ typedef struct _Token {
   enum TokenType type;
 } Token;
 
-Token* new_token(String* file, String* value, int line, int col, enum TokenType type)
-{
+Token* new_token(String* file, String* value, int line, int col, enum TokenType type) {
   Token* token = (Token*) gc_create_struct(sizeof(Token), TOKEN_NAME, TOKEN_GC_FIELD_COUNT);
   token->file = file;
   token->value = value;
@@ -47,20 +46,17 @@ typedef struct _TokenStream {
   int length;
 } TokenStream;
 
-Dictionary* _tokenizer_create_string_set(const char* space_sep_values)
-{
+Dictionary* _tokenizer_create_string_set(const char* space_sep_values) {
   List* words = string_split(space_sep_values, " ");
   Dictionary* lookup = new_dictionary();
-  for (int i = 0; i < words->length; ++i)
-  {
+  for (int i = 0; i < words->length; ++i) {
     String* k = list_get_string(words, i);
     dictionary_set(lookup, k, wrap_bool(1));
   }
   return lookup;
 }
 
-TokenStream* tokenize(String* filename, String* content)
-{
+TokenStream* tokenize(String* filename, String* content) {
   TokenStream* token_stream = (TokenStream*)gc_create_struct(sizeof(TokenStream), TOKEN_STREAM_NAME, TOKEN_STREAM_GC_FIELD_COUNT);
   token_stream->error = NULL;
   token_stream->filename = filename;
@@ -77,18 +73,14 @@ TokenStream* tokenize(String* filename, String* content)
   int line = 1;
   int col = 1;
   char c;
-  for (int i = 0; i < len; ++i)
-  {
+  for (int i = 0; i < len; ++i) {
     lines[i] = line;
     cols[i] = col;
     c = chars[i];
-    if (c == '\n')
-    {
+    if (c == '\n') {
       line++;
       col = 1;
-    }
-    else
-    {
+    } else {
       col++;
     }
   }

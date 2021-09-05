@@ -32,8 +32,7 @@ typedef struct _ProjectManifest {
   int has_error;
 } ProjectManifest;
 
-ProjectManifest* new_project_manifest(String* output_path, String* output_type)
-{
+ProjectManifest* new_project_manifest(String* output_path, String* output_type) {
   ProjectManifest* pm = (ProjectManifest*) gc_create_struct(sizeof(ProjectManifest), PROJECT_MANIFEST_NAME, PROJECT_MANIFEST_GC_FIELDS);
   pm->output_path = output_path;
   pm->output_type = output_type;
@@ -43,8 +42,7 @@ ProjectManifest* new_project_manifest(String* output_path, String* output_type)
   return pm;
 }
 
-ModuleMetadata* new_module_metadata(String* name, String* src, String* action, String* lang)
-{
+ModuleMetadata* new_module_metadata(String* name, String* src, String* action, String* lang) {
   ModuleMetadata* mm = (ModuleMetadata*) gc_create_struct(sizeof(ModuleMetadata), MODULE_METADATA_NAME, MODULE_METADATA_GC_FIELDS);
   mm->name = name;
   mm->src = src;
@@ -66,15 +64,13 @@ ModuleMetadata* new_module_metadata(String* name, String* src, String* action, S
   return mm;
 }
 
-Dictionary* wax_manifest_make_error_dict(String* msg)
-{
+Dictionary* wax_manifest_make_error_dict(String* msg) {
   Dictionary* dict = new_dictionary();
   dictionary_set(dict, new_string("@error"), msg);
   return dict;
 }
 
-ProjectManifest* wax_manifest_make_error(String* error)
-{
+ProjectManifest* wax_manifest_make_error(String* error) {
   ProjectManifest* pm = new_project_manifest(new_string(""), new_string(""));
   pm->has_error = 1;
   pm->error = error;
@@ -82,8 +78,7 @@ ProjectManifest* wax_manifest_make_error(String* error)
 }
 
 Dictionary* wax_manifest_load_impl(const char* path);
-Dictionary* wax_manifest_load_impl(const char* path)
-{
+Dictionary* wax_manifest_load_impl(const char* path) {
   String* str_inherit = new_string("inherit");
   String* str_error = new_string("@error");
   String* str_module_targets = new_string("moduleTargets");
@@ -106,16 +101,12 @@ Dictionary* wax_manifest_load_impl(const char* path)
   Dictionary* manifest = (Dictionary*) json_result.value;
 
   // All the src paths must be adjusted relative to the current working directory
-  if (is_list(dictionary_get(manifest, str_module_targets)))
-  {
+  if (is_list(dictionary_get(manifest, str_module_targets))) {
     List* module_targets = (List*) dictionary_get(manifest, str_module_targets);
-    for (int i = 0; i < module_targets->length; ++i)
-    {
-      if (is_dictionary(list_get(module_targets, i)))
-      {
+    for (int i = 0; i < module_targets->length; ++i) {
+      if (is_dictionary(list_get(module_targets, i))) {
         Dictionary* module_target = (Dictionary*) list_get(module_targets, i);
-        if (is_string(dictionary_get(module_target, str_src)))
-        {
+        if (is_string(dictionary_get(module_target, str_src))) {
           String* src_path_raw = (String*) dictionary_get(module_target, str_src);
           String* src_path_adjusted = normalize_path(string_concat3(path, "/../", src_path_raw->cstring)->cstring);
           dictionary_set(module_target, str_src, src_path_adjusted);
@@ -125,8 +116,7 @@ Dictionary* wax_manifest_load_impl(const char* path)
   }
 
   void* inherit_path = dictionary_get(manifest, str_inherit);
-  if (inherit_path != NULL)
-  {
+  if (inherit_path != NULL) {
     if (!is_string(inherit_path)) return wax_manifest_make_error_dict(string_concat3("Inherit field in '", path, "' does not contain a string."));
     String* canonicalized_inherit_path = normalize_path(string_concat3(path, "/../", ((String*)inherit_path)->cstring)->cstring);
     
@@ -134,15 +124,13 @@ Dictionary* wax_manifest_load_impl(const char* path)
 
     if (dictionary_has_key(parent_manifest, str_error)) return parent_manifest;
     List* keys = dictionary_get_keys(manifest);
-    for (int i = 0; i < keys->length; ++i)
-    {
+    for (int i = 0; i < keys->length; ++i) {
       String* key = list_get_string(keys, i);
       void* value = dictionary_get(manifest, key);
       void* parent_value = dictionary_get(parent_manifest, key);
       
       // for moduleTargets, append the manifest's value after the parent's value
-      if (string_equals(key, str_module_targets) && is_list(value) && is_list(parent_value))
-      {
+      if (string_equals(key, str_module_targets) && is_list(value) && is_list(parent_value)) {
         list_push_all(parent_value, value);
         value = parent_value;
       }
@@ -154,8 +142,7 @@ Dictionary* wax_manifest_load_impl(const char* path)
   return manifest;
 }
 
-ProjectManifest* _wax_manifest_load_verifier(const char* path)
-{
+ProjectManifest* _wax_manifest_load_verifier(const char* path) {
   Dictionary* manifest = wax_manifest_load_impl(path);
   String* str_error = new_string("@error");
   if (dictionary_has_key(manifest, str_error)) return wax_manifest_make_error((String*) dictionary_get(manifest, str_error));
@@ -175,10 +162,8 @@ ProjectManifest* _wax_manifest_load_verifier(const char* path)
     str_output,
     str_output_type,
   };
-  for (int i = 0; i < 4; ++i)
-  {
-    if (!dictionary_has_key(manifest, req_fields[i]))
-    {
+  for (int i = 0; i < 4; ++i) {
+    if (!dictionary_has_key(manifest, req_fields[i])) {
       return wax_manifest_make_error(string_concat3("Manifest is missing a '", req_fields[i]->cstring, "' field."));
     }
   }
@@ -188,11 +173,9 @@ ProjectManifest* _wax_manifest_load_verifier(const char* path)
     str_output,
     str_output_type,
   };
-  for (int i = 0; i < 3; ++i)
-  {
+  for (int i = 0; i < 3; ++i) {
     void* raw_value = dictionary_get(manifest, req_str_fields[i]);
-    if (!is_string(raw_value))
-    {
+    if (!is_string(raw_value)) {
       return wax_manifest_make_error(string_concat3("The manifest field '", req_str_fields[i]->cstring, "'"));
     }
     req_str_fields[i] = (String*) raw_value;
@@ -214,13 +197,11 @@ ProjectManifest* _wax_manifest_load_verifier(const char* path)
     str_action,
   };
 
-  for (int i = 0; i < module_targets->length; ++i)
-  {
+  for (int i = 0; i < module_targets->length; ++i) {
     void* raw_module_target = list_get(module_targets, i);
     if (!is_dictionary(raw_module_target)) return wax_manifest_make_error(new_string("Manifest moduleTargets contains an invalid element."));
     Dictionary* module_target = (Dictionary*) raw_module_target;
-    for (int j = 0; j < 4; ++j)
-    {
+    for (int j = 0; j < 4; ++j) {
       String* key = req_str_mod_target_fields[j];
       void* value = dictionary_get(raw_module_target, key);
       if (!is_string(value)) return wax_manifest_make_error(string_concat3("Manifest moduleTargets contains an invalid value for a '", key->cstring, "' field."));
@@ -230,8 +211,7 @@ ProjectManifest* _wax_manifest_load_verifier(const char* path)
       dictionary_get(module_target, str_src),
       dictionary_get(module_target, str_action),
       dictionary_get(module_target, str_lang));
-    if (string_equals(main_module_name, mm->name))
-    {
+    if (string_equals(main_module_name, mm->name)) {
       mm->is_main = 1;
     }
     list_add(output->modules, mm);
@@ -240,8 +220,7 @@ ProjectManifest* _wax_manifest_load_verifier(const char* path)
   return output;
 }
 
-ProjectManifest* wax_manifest_load(const char* path)
-{
+ProjectManifest* wax_manifest_load(const char* path) {
   ProjectManifest* manifest = _wax_manifest_load_verifier(path);
 
   gc_save_item(manifest);

@@ -11,40 +11,34 @@
 
 void _unknown_value_to_string(void* item, StringBuilder* sb);
 
-void _unknown_value_to_string(void* item, StringBuilder* sb)
-{
+void _unknown_value_to_string(void* item, StringBuilder* sb) {
   if (item == NULL) {
     string_builder_append_chars(sb, "NULL");
     return;
   }
   static char buffer[50];
   int buf_size = 0;
-  switch (gc_get_type(item))
-  {
+  switch (gc_get_type(item)) {
     case 'N':
       string_builder_append_chars(sb, "<null>");
       break;
     case 'I': 
       {
         int value = ((Integer*)item)->value;
-        if (value <= 0)
-        {
-          if (value == 0)
-          {
+        if (value <= 0) {
+          if (value == 0) {
             string_builder_append_char(sb, '0');
             return;
           }
           string_builder_append_char(sb, '-');
           value *= -1;
         }
-        while (value > 0)
-        {
+        while (value > 0) {
           int digit = value % 10;
           value = value / 10;
           buffer[buf_size++] = '0' + digit;
         }
-        while (buf_size --> 0)
-        {
+        while (buf_size --> 0) {
           string_builder_append_char(sb, buffer[buf_size]);
         }
       }
@@ -54,10 +48,8 @@ void _unknown_value_to_string(void* item, StringBuilder* sb)
       {
         // TODO: why are all the sprintf solutions causing corruption?
         double whole_value = ((Float*)item)->value;
-        if (whole_value <= 0)
-        {
-          if (whole_value == 0.0)
-          {
+        if (whole_value <= 0) {
+          if (whole_value == 0.0) {
             string_builder_append_chars(sb, "0.0");
             return;
           }
@@ -69,23 +61,19 @@ void _unknown_value_to_string(void* item, StringBuilder* sb)
 
         int int_portion = (int)floor(whole_value);
         whole_value -= int_portion;
-        while (int_portion > 0)
-        {
+        while (int_portion > 0) {
           buffer[buf_size++] = (int_portion % 10) + '0';
           int_portion /= 10;
         }
-        while (buf_size --> 0)
-        {
+        while (buf_size --> 0) {
           string_builder_append_char(sb, buffer[buf_size]);
         }
         string_builder_append_char(sb, '.');
-        if (whole_value == 0)
-        {
+        if (whole_value == 0) {
           string_builder_append_char(sb, '0');
           return;
         }
-        for (int i = 0; i < 10; ++i)
-        {
+        for (int i = 0; i < 10; ++i) {
           if (whole_value == 0.0) break;
           whole_value *= 10;
           int digit = (int) floor(whole_value);
@@ -94,12 +82,10 @@ void _unknown_value_to_string(void* item, StringBuilder* sb)
         }
         buffer[buf_size] = '\0';
 
-        while (buf_size > 1 && buffer[buf_size - 1] == '0')
-        {
+        while (buf_size > 1 && buffer[buf_size - 1] == '0') {
           buffer[--buf_size] = '\0';
         }
         string_builder_append_chars(sb, buffer);
-
       }
       break;
 
@@ -113,8 +99,7 @@ void _unknown_value_to_string(void* item, StringBuilder* sb)
       {
         string_builder_append_chars(sb, "[");
         List* list = (List*) item;
-        for (int i = 0; i < list->length; ++i)
-        {
+        for (int i = 0; i < list->length; ++i) {
           if (i > 0) string_builder_append_chars(sb, ", ");
           _unknown_value_to_string(list->items[i], sb);
         }
@@ -124,15 +109,11 @@ void _unknown_value_to_string(void* item, StringBuilder* sb)
     case 'D':
       {
         Dictionary* dict = (Dictionary*) item;
-        if (dict->size == 0)
-        {
+        if (dict->size == 0) {
           string_builder_append_chars(sb, "{}");
-        }
-        else
-        {
+        } else {
           string_builder_append_chars(sb, "{ ");
-          for (int i = 0; i < dict->size; ++i)
-          {
+          for (int i = 0; i < dict->size; ++i) {
             String* key = dict->keys[i];
             void* value = dict->values[i];
             if (i > 0) string_builder_append_chars(sb, ", ");
@@ -156,8 +137,7 @@ void _unknown_value_to_string(void* item, StringBuilder* sb)
   }
 }
 
-String* value_to_string(void* item)
-{
+String* value_to_string(void* item) {
   StringBuilder* sb = new_string_builder();
   _unknown_value_to_string(item, sb);
   String* str = string_builder_to_string(sb);
@@ -165,15 +145,12 @@ String* value_to_string(void* item)
   return str;
 }
 
-List* string_split(const char* value, const char* sep)
-{
+List* string_split(const char* value, const char* sep) {
   List* output = new_list();
-  if (sep[0] == '\0')
-  {
+  if (sep[0] == '\0') {
     char buf[2];
     buf[1] = '\0';
-    for (int i = 0; value[i] != '\0'; ++i)
-    {
+    for (int i = 0; value[i] != '\0'; ++i) {
       buf[0] = value[i];
       list_add(output, new_string(buf));
     }
@@ -184,31 +161,24 @@ List* string_split(const char* value, const char* sep)
   char c;
   StringBuilder* current_item = new_string_builder();
   int is_match = 0;
-  for (int i = 0; value[i] != '\0'; ++i)
-  {
+  for (int i = 0; value[i] != '\0'; ++i) {
     is_match = 0;
     c = value[i];
-    if (c == first_char)
-    {
+    if (c == first_char) {
       is_match = 1;
-      for (int j = 1; j < sep_len; ++j)
-      {
-        if (value[i + j] != sep[j])
-        {
+      for (int j = 1; j < sep_len; ++j) {
+        if (value[i + j] != sep[j]) {
           is_match = 0;
           break;
         }
       }
     }
 
-    if (is_match)
-    {
+    if (is_match) {
       list_add(output, string_builder_to_string(current_item));
       current_item->length = 0;
       i += sep_len - 1;
-    }
-    else
-    {
+    } else {
       string_builder_append_char(current_item, c);
     }
   }
@@ -216,14 +186,12 @@ List* string_split(const char* value, const char* sep)
   return output;
 }
 
-String* list_join(List* list, String* sep)
-{
+String* list_join(List* list, String* sep) {
   if (list->length == 0) return new_string("");
   if (list->length == 1 && gc_get_type(list->items[0]) == 'S') return (String*) list->items[0];
   StringBuilder* sb = new_string_builder();
   int sep_non_empty = sep->length > 0;
-  for (int i = 0; i < list->length; ++i)
-  {
+  for (int i = 0; i < list->length; ++i) {
     if (i > 0 && sep_non_empty) string_builder_append_chars(sb, sep->cstring);
     void* item = list->items[i];
     _unknown_value_to_string(item, sb);

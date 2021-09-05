@@ -35,65 +35,52 @@ typedef struct _JsonParseResult {
 
 void* json_parse_thing(JsonParserContext* ctx);
 
-int json_parse_is_next(JsonParserContext* ctx, const char* value)
-{
+int json_parse_is_next(JsonParserContext* ctx, const char* value) {
   char* current = ctx->str + ctx->index;
   int i = 0;
-  while (1)
-  {
+  while (1) {
     if (value[i] == '\0') return 1;
     if (current[i] != value[i]) return 0;
     ++i;
   }
 }
 
-char json_parse_peek(JsonParserContext* ctx)
-{
+char json_parse_peek(JsonParserContext* ctx) {
   return ctx->str[ctx->index];
 }
 
-char json_parse_pop(JsonParserContext* ctx)
-{
+char json_parse_pop(JsonParserContext* ctx) {
   char c = ctx->str[ctx->index++];
-  if (c == '\n')
-  {
+  if (c == '\n') {
     ctx->line++;
     ctx->col = 1;
-  }
-  else
-  {
+  } else {
     ctx->col++;
   }
   return c;
 }
 
-void json_parse_skip_whitespace(JsonParserContext* ctx)
-{
+void json_parse_skip_whitespace(JsonParserContext* ctx) {
   char c = ctx->str[ctx->index];
-  while (c == ' ' || c == '\t' || c == '\n')
-  {
+  while (c == ' ' || c == '\t' || c == '\n') {
     json_parse_pop(ctx);
     c = ctx->str[ctx->index];
   }
 }
 
-int json_parse_is_eof(JsonParserContext* ctx)
-{
+int json_parse_is_eof(JsonParserContext* ctx) {
   return ctx->index == ctx->length;
 }
 
-void* json_throw_error(JsonParserContext* ctx, int error_code)
-{
+void* json_throw_error(JsonParserContext* ctx, int error_code) {
   ctx->error_code = error_code;
   ctx->error_col = ctx->col;
   ctx->error_line = ctx->line;
   return NULL;
 }
 
-int json_parse_pop_if_next(JsonParserContext* ctx, const char* value)
-{
-  if (json_parse_is_next(ctx, value))
-  {
+int json_parse_pop_if_next(JsonParserContext* ctx, const char* value) {
+  if (json_parse_is_next(ctx, value)) {
     int len = strlen(value);
     for (int i = 0; i < len; ++i) json_parse_pop(ctx);
     return 1;
@@ -101,39 +88,31 @@ int json_parse_pop_if_next(JsonParserContext* ctx, const char* value)
   return 0;
 }
 
-void* json_parse_null(JsonParserContext* ctx)
-{
+void* json_parse_null(JsonParserContext* ctx) {
   if (json_parse_pop_if_next(ctx, "null")) return get_null();
   return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
 }
 
-void* json_parse_boolean(JsonParserContext* ctx)
-{
+void* json_parse_boolean(JsonParserContext* ctx) {
   if (json_parse_pop_if_next(ctx, "true")) return wrap_bool(1);
   if (json_parse_pop_if_next(ctx, "false")) return wrap_bool(0);
   return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
 }
 
-void* json_parse_string(JsonParserContext* ctx)
-{
+void* json_parse_string(JsonParserContext* ctx) {
   StringBuilder* sb = new_string_builder();
   json_parse_skip_whitespace(ctx);
-  if (!json_parse_pop_if_next(ctx, "\""))
-  {
+  if (!json_parse_pop_if_next(ctx, "\"")) {
     return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
   }
-  while (!json_parse_is_eof(ctx))
-  {
+  while (!json_parse_is_eof(ctx)) {
     char c = json_parse_pop(ctx);
-    if (c == '"')
-    {
+    if (c == '"') {
       break;
     }
-    if (c == '\\')
-    {
+    if (c == '\\') {
       c = json_parse_pop(ctx);
-      switch (c)
-      {
+      switch (c) {
         case 'n': string_builder_append_char(sb, '\n'); break;
         case 'r': string_builder_append_char(sb, '\r'); break;
         case '"': string_builder_append_char(sb, '"'); break;
@@ -142,15 +121,12 @@ void* json_parse_string(JsonParserContext* ctx)
         case 't': string_builder_append_char(sb, '\t'); break;
         default: return json_throw_error(ctx, JSON_ERROR_INVALID_STRING_ESCAPE_SEQUENCE);
       }
-    }
-    else
-    {
+    } else {
       string_builder_append_char(sb, c);
     }
   }
 
-  if (json_parse_is_eof(ctx))
-  {
+  if (json_parse_is_eof(ctx)) {
     printf("EOF while parsing string!\n");
     return json_throw_error(ctx, JSON_ERROR_EOF);
   }
@@ -160,16 +136,13 @@ void* json_parse_string(JsonParserContext* ctx)
   return output;
 }
 
-void* json_parse_list(JsonParserContext* ctx)
-{
+void* json_parse_list(JsonParserContext* ctx) {
   json_parse_skip_whitespace(ctx);
   if (!json_parse_pop_if_next(ctx, "[")) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
   json_parse_skip_whitespace(ctx);
   List* output = new_list();
-  while (!json_parse_pop_if_next(ctx, "]"))
-  {
-    if (output->length > 0)
-    {
+  while (!json_parse_pop_if_next(ctx, "]")) {
+    if (output->length > 0) {
       if (!json_parse_pop_if_next(ctx, ",")) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
       json_parse_skip_whitespace(ctx);
     }
@@ -184,16 +157,13 @@ void* json_parse_list(JsonParserContext* ctx)
   return output;
 }
 
-void* json_parse_object(JsonParserContext* ctx)
-{
+void* json_parse_object(JsonParserContext* ctx) {
   json_parse_skip_whitespace(ctx);
   if (!json_parse_pop_if_next(ctx, "{")) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
   json_parse_skip_whitespace(ctx);
   Dictionary* output = new_dictionary();
-  while (!json_parse_pop_if_next(ctx, "}"))
-  {
-    if (output->size > 0)
-    {
+  while (!json_parse_pop_if_next(ctx, "}")) {
+    if (output->size > 0) {
       if (!json_parse_pop_if_next(ctx, ",")) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
       json_parse_skip_whitespace(ctx);
     }
@@ -210,40 +180,31 @@ void* json_parse_object(JsonParserContext* ctx)
   return output;
 }
 
-void* json_parse_number(JsonParserContext* ctx)
-{
+void* json_parse_number(JsonParserContext* ctx) {
   StringBuilder* sb = new_string_builder();
   int decimal_found = 0;
   int sign = json_parse_pop_if_next(ctx, "-") ? -1 : 1;
 
-  while (!json_parse_is_eof(ctx))
-  {
+  while (!json_parse_is_eof(ctx)) {
     char c = json_parse_peek(ctx);
 
-    if (c == '.')
-    {
-      if (decimal_found)
-      {
+    if (c == '.') {
+      if (decimal_found) {
         string_builder_free(sb); 
         return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
       }
       decimal_found = 1;
       string_builder_append_char(sb, '.');
       json_parse_pop(ctx);
-    }
-    else if (c >= '0' && c <= '9')
-    {
+    } else if (c >= '0' && c <= '9') {
       string_builder_append_char(sb, c);
       json_parse_pop(ctx);
-    }
-    else
-    {
+    } else {
       break;
     }
   }
 
-  if (sb->length == 1)
-  {
+  if (sb->length == 1) {
     char c = sb->chars[0];
     string_builder_free(sb);
     if (decimal_found) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
@@ -253,27 +214,21 @@ void* json_parse_number(JsonParserContext* ctx)
 
   String* str = string_builder_to_string(sb);
   free(sb);
-  if (decimal_found)
-  {
+  if (decimal_found) {
     double value;
     if (!try_parse_float(str->cstring, &value)) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
     return wrap_float(sign * value);
-  }
-  else
-  {
+  } else {
     int value;
     if (!try_parse_int(str->cstring, &value)) return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
     return wrap_int(sign * value);
   }
-
 }
 
-void* json_parse_thing(JsonParserContext* ctx)
-{
+void* json_parse_thing(JsonParserContext* ctx) {
   json_parse_skip_whitespace(ctx);
   char next = ctx->str[ctx->index];
-  switch (next)
-  {
+  switch (next) {
     case '\0':
       return json_throw_error(ctx, JSON_ERROR_EOF);
     case '{': return json_parse_object(ctx);
@@ -286,15 +241,13 @@ void* json_parse_thing(JsonParserContext* ctx)
   }
 }
 
-String* json_get_error(JsonParseResult result)
-{
+String* json_get_error(JsonParseResult result) {
   int line = result.line;
   int col = result.col;
   String* line_str = value_to_string(wrap_int(line));
   String* col_str = value_to_string(wrap_int(col));
   String* msg = NULL;
-  switch (result.error)
-  {
+  switch (result.error) {
     case JSON_OK: return NULL;
     case JSON_ERROR_BAD_SYNTAX: msg = new_string("Bad syntax"); break;
     case JSON_ERROR_EOF: msg = new_string("Unexpected EOF"); break;
@@ -305,17 +258,14 @@ String* json_get_error(JsonParseResult result)
   return string_concat6(msg->cstring, " on line ", line_str->cstring, ", col ", col_str->cstring, ".");
 }
 
-void json_print_error(JsonParseResult result)
-{
+void json_print_error(JsonParseResult result) {
   String* output = json_get_error(result);
-  if (output != NULL)
-  {
+  if (output != NULL) {
     printf("JSON Error: %s\n", output->cstring);
   }
 }
 
-JsonParseResult json_parse(char* data)
-{
+JsonParseResult json_parse(char* data) {
   JsonParseResult result;
   
   String* str = string_replace(data, "\r\n", "\n");
@@ -330,15 +280,12 @@ JsonParseResult json_parse(char* data)
   ctx.col = 1;
 
   void* output = json_parse_thing(&ctx);
-  if (ctx.error_code)
-  {
+  if (ctx.error_code) {
     result.error = ctx.error_code;
     result.line = ctx.error_line;
     result.col = ctx.error_col;
     result.value = NULL;
-  }
-  else
-  {
+  } else {
     result.error = 0;
     result.line = 0;
     result.col = 0;
