@@ -61,6 +61,19 @@ String* new_string(const char* value)
   return str;
 }
 
+String* new_string_from_range(const char* chars, int start, int end) {
+  if (start == end) return new_string("");
+  int len = end - start;
+  char* buf = (char*) malloc(sizeof(char) * (len + 1));
+  for (int i = 0; i < len; ++i) {
+    buf[i] = chars[i + start];
+  }
+  buf[len] = '\0';
+  String* str = new_string(buf);
+  free(buf);
+  return str;
+}
+
 StringBuilder* new_string_builder()
 {
   StringBuilder* sb = (StringBuilder*) malloc_clean(sizeof(StringBuilder));

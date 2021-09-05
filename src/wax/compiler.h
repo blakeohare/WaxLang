@@ -2,6 +2,7 @@
 #define _WAX_COMPILER_H
 
 #include "manifest.h"
+#include "tokens.h"
 #include "../util/fileio.h"
 #include "../util/lists.h"
 #include "../util/dictionaries.h"
@@ -35,13 +36,26 @@ void wax_compile(ProjectManifest* manifest, ModuleMetadata* module)
     return;
   }
 
+  gc_save_item(src_files);
   List* src_file_names = dictionary_get_keys(src_files);
+  gc_save_item(src_file_names);
   for (int i = 0; i < src_file_names->length; ++i)
   {
     String* name = list_get_string(src_file_names, i);
     String* full_path = (String*) dictionary_get(src_files, name);
     String* content = file_read_text(full_path->cstring);
-    printf("TODO: parse %s\n", full_path->cstring);
+    TokenStream* tokens = tokenize(full_path, content);
+    gc_save_item(tokens);
+    gc_perform_pass();
+    
+    for (int i = 0; i < tokens->length; ++i) {
+      printf("Token: %s\n", ((Token*)list_get(tokens->tokens, i))->value->cstring);
+    }
+
+    gc_release_item(tokens);
   }
+  gc_release_item(src_files);
+  gc_release_item(src_file_names);
+  gc_perform_pass();
 }
 #endif

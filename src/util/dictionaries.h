@@ -38,18 +38,22 @@ void _dict_rehash(Dictionary* dict)
   int old_length = dict->bucket_length;
   int new_length = dict->bucket_length * 2;
   DictEntry* entries = NULL; // grab them all and put them in this linked list
-  for (int i = 0; old_length; ++i)
+  int size = 0;
+  for (int i = 0; i < dict->size; ++i) {
+    String* key = dict->keys[i];
+  }
+  for (int i = 0; i < old_length; ++i)
   {
     DictEntry* walker = dict->buckets[i];
     while (walker != NULL)
     {
+      size++;
       DictEntry* next = walker->next;
       walker->next = entries;
       entries = walker;
       walker = next;
     }
   }
-
   free(dict->buckets);
   dict->buckets = (DictEntry**) malloc_ptr_array(new_length);
 
@@ -62,8 +66,29 @@ void _dict_rehash(Dictionary* dict)
     DictEntry* entry = entries;
     entries = entry->next;
     entry->next = dict->buckets[bucket_index];
+    entry->key = key;
+    entry->index = i;
     dict->buckets[bucket_index] = entry;
   }
+  dict->bucket_length = new_length;
+  
+  for (int i = 0; i < dict->bucket_length; ++i) {
+    DictEntry* walker = dict->buckets[i];
+    while (walker != NULL) {
+      if (walker != NULL) walker = walker->next;
+    }
+  }
+
+  String** new_keys = (String**) malloc_ptr_array(new_length + 1);
+  void** new_values = (void**) malloc_ptr_array(new_length + 1);
+  for (int i = 0; i < dict->size; ++i) {
+    new_keys[i] = dict->keys[i];
+    new_values[i] = dict->values[i];
+  }
+  free(dict->keys);
+  free(dict->values);
+  dict->keys = new_keys;
+  dict->values = new_values;
 }
 
 int _dict_get_index(Dictionary* dict, String* key, int create_if_missing)

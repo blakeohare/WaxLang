@@ -13,12 +13,16 @@ void _unknown_value_to_string(void* item, StringBuilder* sb);
 
 void _unknown_value_to_string(void* item, StringBuilder* sb)
 {
+  if (item == NULL) {
+    string_builder_append_chars(sb, "NULL");
+    return;
+  }
   static char buffer[50];
   int buf_size = 0;
   switch (gc_get_type(item))
   {
     case 'N':
-      string_builder_append_chars(sb, "null");
+      string_builder_append_chars(sb, "<null>");
       break;
     case 'I': 
       {
