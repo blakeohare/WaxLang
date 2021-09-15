@@ -1,6 +1,7 @@
 #ifndef _WAX_PARSER_H
 #define _WAX_PARSER_H
 
+#include <string.h>
 #include "compilercontext.h"
 #include "tokens.h"
 #include "nodes.h"
@@ -11,6 +12,8 @@ int parse_class(CompilerContext* ctx);
 ConstructorDefinition* parse_constructor(CompilerContext* ctx);
 FunctionDefinition* parse_function(CompilerContext* ctx);
 FieldDefinition* parse_field(CompilerContext* ctx);
+Node* parse_executable(CompilerContext* ctx, int allow_complex);
+Node* parse_expression(CompilerContext* ctx);
 
 void parse_first_pass(CompilerContext* ctx) {
   ctx->has_error = 0; // keep parsing these fresh tokens even if there's a syntax error in previous files
@@ -24,11 +27,17 @@ void parse_first_pass(CompilerContext* ctx) {
 int parse_top_level_entity(CompilerContext* ctx) {
   String* next = tokens_peek_next_value(ctx);
   if (string_equals_chars(next, "class")) {
-    return parse_class(ctx);
+    ClassDefinition* cd = parse_class(ctx);
+    if (cd == NULL) return 0;
+    list_add(ctx->class_definitions, cd);
+    return 1;
   }
+
   if (string_equals_chars(next, "function")) {
     FunctionDefinition* fd = parse_function(ctx);
+    if (fd == NULL) return 0;
     list_add(ctx->function_definitions, fd);
+    return 1;
   }
 
   tokens_pop_expected(ctx, "function"); // throws
@@ -96,9 +105,127 @@ int parse_class(CompilerContext* ctx) {
   return 1;
 }
 
-FunctionDefinition* parse_function(CompilerContext* ctx) {
-  parser_error_chars(ctx, tokens_peek_next(ctx), "parse_function NOT IMPLEMENTED");
+Node* parse_expression(CompilerContext* ctx) {
+  parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: parse_expression");
   return NULL;
+}
+
+Node* parse_break(CompilerContext* ctx);
+Node* parse_continue(CompilerContext* ctx);
+Node* parse_do_while_loop(CompilerContext* ctx);
+Node* parse_for_loop(CompilerContext* ctx);
+Node* parse_if(CompilerContext* ctx);
+Node* parse_return(CompilerContext* ctx);
+Node* parse_switch(CompilerContext* ctx);
+Node* parse_try(CompilerContext* ctx);
+Node* parse_while_loop(CompilerContext* ctx);
+
+Node* parse_executable(CompilerContext* ctx, int allow_complex) {
+  String* next = tokens_peek_next_value_no_eof(ctx);
+  if (next == NULL) return NULL;
+
+  if (allow_complex) {
+    const char* next_chars = next->cstring;
+    switch (next_chars[0]) {
+      case 'b':
+        if (strcmp(next_chars, "break") == 0) return parse_break(ctx);
+        break;
+      case 'c':
+        if (strcmp(next_chars, "continue") == 0) return parse_continue(ctx);
+        break;
+      case 'd':
+        if (strcmp(next_chars, "do") == 0) return parse_do_while_loop(ctx);
+        break;
+      case 'f':
+        if (strcmp(next_chars, "for") == 0) return parse_for_loop(ctx);
+        break;
+      case 'i':
+        if (strcmp(next_chars, "if") == 0) return parse_if(ctx);
+        break;
+      case 'r':
+        if (strcmp(next_chars, "return") == 0) return parse_return(ctx);
+        break;
+      case 's':
+        if (strcmp(next_chars, "switch") == 0) return parse_switch(ctx);
+        break;
+      case 't':
+        if (strcmp(next_chars, "try") == 0) return parse_try(ctx);
+        break;
+      case 'w':
+        if (strcmp(next_chars, "while") == 0) return parse_while_loop(ctx);
+        break;
+    }
+  }
+  parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: parse_executable");
+  return NULL;
+}
+
+
+Node* parse_break(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_break"); return NULL; }
+Node* parse_continue(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_continue"); }
+Node* parse_do_while_loop(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_do_while_loop"); return NULL; }
+Node* parse_for_loop(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_for_loop"); return NULL; }
+Node* parse_if(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_if"); return NULL; }
+Node* parse_return(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_return"); return NULL; }
+Node* parse_switch(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_switch"); return NULL; }
+Node* parse_try(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_try"); return NULL; }
+Node* parse_while_loop(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_while_loop"); return NULL; }
+
+int parse_arg_list(CompilerContext* ctx, List* arg_names_out, List* arg_default_values_out) {
+  if (tokens_pop_expected(ctx, "(") == NULL) return 0;
+  while (!tokens_pop_if_next(ctx, ")")) {
+    if (arg_names_out->length > 0) {
+      if (!tokens_pop_expected(ctx, ",")) return 0;
+    }
+    Token* arg_name = tokens_pop(ctx);
+    if (!token_is_name(arg_name)) {
+      return parser_error(ctx, arg_name, string_concat3("Expected an argument name but found '", arg_name->value->cstring, "' instead."));
+    }
+    list_add(arg_names_out, arg_name);
+    if (tokens_pop_if_next(ctx, "=")) {
+      Node* default_value = parse_expression(ctx);
+      list_add(arg_default_values_out, default_value);
+    } else {
+      list_add(arg_default_values_out, NULL);
+    }
+  }
+  return 1;
+}
+
+int parse_code_block(CompilerContext* ctx, List* code, int require_curly_brace) {
+  if (require_curly_brace || tokens_is_next(ctx, "{")) {
+    if (tokens_pop_expected(ctx, "{") == NULL) return 0;
+    while (!tokens_pop_if_next(ctx, "}")) {
+      Node* exec = parse_executable(ctx, 1);
+      if (exec == NULL) return 0;
+      list_add(code, exec);
+    }
+  } else {
+    Node* exec = parse_executable(ctx, 1);
+    if (exec == NULL) return 0;
+    list_add(code, exec);
+  }
+  return 1;
+}
+
+FunctionDefinition* parse_function(CompilerContext* ctx) {
+  Token* function_token = tokens_pop_expected(ctx, "function");
+  if (function_token == NULL) return NULL;
+
+  Token* function_name = tokens_pop(ctx);
+  if (function_name == NULL) return NULL;
+  if (!token_is_name(function_name)) {
+    parser_error(ctx, function_name, string_concat3("Expected a function name but found '", function_name->value->cstring, "' instead."));
+    return NULL;
+  }
+  
+  FunctionDefinition* func_def = new_function_definition(function_token, function_name);
+
+  if (!parse_arg_list(ctx, func_def->arg_tokens, func_def->arg_default_values)) return NULL;
+  
+  if (!parse_code_block(ctx, func_def->code, 1)) return NULL;
+
+  return func_def;
 }
 
 FieldDefinition* parse_field(CompilerContext* ctx) {

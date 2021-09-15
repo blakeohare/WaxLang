@@ -1,6 +1,7 @@
 #ifndef _WAX_COMPILERCONTEXT_H
 #define _WAX_COMPILERCONTEXT_H
 
+#include <string.h>
 #include "../util/gcbase.h"
 #include "../util/lists.h"
 #include "tokens.h"
@@ -49,6 +50,10 @@ Token* tokens_peek_next(CompilerContext* ctx) {
     return (Token*) list_get(ctx->tokens->tokens, ctx->tokens->index);
   }
   return NULL;
+}
+
+int parser_error_next_chars(CompilerContext* ctx, const char* msg) {
+  return parser_error_chars(ctx, tokens_has_more(ctx) ? tokens_peek_next(ctx) : NULL, msg);
 }
 
 String* tokens_peek_next_value(CompilerContext* ctx) {
@@ -100,6 +105,12 @@ int tokens_pop_if_next(CompilerContext* ctx, const char* token) {
     return 1;
   }
   return 0;
+}
+
+int tokens_is_next(CompilerContext* ctx, const char* token) {
+  String* next = tokens_peek_next_value(ctx);
+  if (next == NULL) return 0;
+  return strcmp(token, next->cstring) == 0 ? 1 : 0;
 }
 
 #endif
