@@ -34,6 +34,10 @@ Token* new_token(String* file, String* value, int line, int col, enum TokenType 
   return token;
 }
 
+int token_is_name(Token* token) {
+  return token->type == TOKEN_TYPE_WORD;
+}
+
 #define TOKEN_STREAM_GC_FIELD_COUNT 4
 #define TOKEN_STREAM_NAME "TokenStream"
 

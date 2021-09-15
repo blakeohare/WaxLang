@@ -70,4 +70,10 @@ int is_list(void* obj) {
   return gc_is_type(obj, 'L');
 }
 
+List* list_clone(List* original) {
+  List* output = new_list();
+  list_push_all(output, original);
+  return output;
+}
+
 #endif

@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < modules->length; ++i) {
       ModuleMetadata* mm = (ModuleMetadata*) modules->items[i];
       if (mm->lang == LANG_WAX) {
+        printf("Compiling wax project '%s'...\n", mm->name->cstring);
         wax_compile(manifest, mm);
       } else {
         printf("TODO: wrap project %s from %s\n", mm->name->cstring, mm->src->cstring);
