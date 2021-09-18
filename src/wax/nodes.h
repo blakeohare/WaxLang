@@ -108,6 +108,46 @@ IfStatement* new_if_statement(Token* if_token, Node* condition, List* true_code,
   return ifstat;
 }
 
+typedef struct _ForLoop {
+  Node node;
+  List* inits;
+  Node* condition;
+  List* steps;
+  List* code;
+} ForLoop;
+#define NODE_FOR_LOOP_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 4)
+#define NODE_FOR_LOOP_NAME "ForLoop"
+
+ForLoop* new_for_loop(Token* for_token, List* inits, Node* condition, List* steps, List* code) {
+  ForLoop* fl = (ForLoop*) gc_create_struct(sizeof(ForLoop), NODE_FOR_LOOP_NAME, NODE_FOR_LOOP_GC_FIELD_COUNT);
+  fl->node.first_token = for_token;
+  fl->node.type = new_string(NODE_FOR_LOOP_NAME);
+  fl->inits = inits;
+  fl->condition = condition;
+  fl->steps = steps;
+  fl->code = code;
+  return fl;
+}
+
+typedef struct _ForEachLoop {
+  Node node;
+  Token* variable;
+  Node* list_expr;
+  List* code;
+} ForEachLoop;
+#define NODE_FOR_EACH_LOOP_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
+#define NODE_FOR_EACH_LOOP_NAME "ForEachLoop"
+
+ForEachLoop* new_for_each_loop(Token* for_token, Token* iterator_variable, Node* list_expr, List* code) {
+  ForEachLoop* fl = (ForEachLoop*) gc_create_struct(sizeof(ForEachLoop), NODE_FOR_EACH_LOOP_NAME, NODE_FOR_EACH_LOOP_GC_FIELD_COUNT);
+  fl->node.first_token = for_token;
+  fl->node.type = new_string(NODE_FOR_EACH_LOOP_NAME);
+  fl->variable = iterator_variable;
+  fl->list_expr = list_expr;
+  fl->code = code;
+  return fl;
+}
+
 typedef struct _ExpressionAsExecutable {
   Node node;
   Node* expression;
@@ -121,6 +161,21 @@ ExpressionAsExecutable* new_expression_as_executable(Node* expr) {
   ee->node.type = new_string(NODE_EXPR_EXEC_NAME);
   ee->expression = expr;
   return ee;
+}
+
+typedef struct _BooleanConstant {
+  Node node;
+  int value;
+} BooleanConstant;
+#define NODE_BOOLEAN_CONSTANT_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 0)
+#define NODE_BOOLEAN_CONSTANT_NAME "BooleanConstant"
+
+BooleanConstant* new_boolean_constant(Token* token, int value) {
+  BooleanConstant* bo = (BooleanConstant*) gc_create_struct(sizeof(BooleanConstant), NODE_BOOLEAN_CONSTANT_NAME, NODE_BOOLEAN_CONSTANT_GC_FIELD_COUNT);
+  bo->node.first_token = token;
+  bo->node.type = new_string(NODE_BOOLEAN_CONSTANT_NAME);
+  bo->value = value;
+  return bo;
 }
 
 typedef struct _IntegerConstant {
@@ -238,6 +293,27 @@ OpChain* new_op_chain(List* expressions, List* ops) {
   oc->expressions = list_clone(expressions);
   oc->ops = list_clone(ops);
   return oc;
+}
+
+typedef struct _Ternary {
+  Node node;
+  Node* condition;
+  Token* question_mark;
+  Node* true_expr;
+  Node* false_expr;
+} Ternary;
+#define NODE_TERNARY_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 4)
+#define NODE_TERNARY_NAME "Ternary"
+
+Ternary* new_ternary(Node* condition, Token* question_mark_token, Node* true_expr, Node* false_expr) {
+  Ternary* ter = (Ternary*) gc_create_struct(sizeof(Ternary), NODE_TERNARY_NAME, NODE_TERNARY_GC_FIELD_COUNT);
+  ter->node.first_token = condition->first_token;
+  ter->node.type = new_string(NODE_TERNARY_NAME);
+  ter->condition = condition;
+  ter->question_mark = question_mark_token;
+  ter->true_expr = true_expr;
+  ter->false_expr = false_expr;
+  return ter;
 }
 
 typedef struct _FunctionInvocation {

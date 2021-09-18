@@ -202,11 +202,71 @@ Node* parse_if(CompilerContext* ctx) {
   }
   return new_if_statement(if_token, condition, true_code, false_code);
 }
+Node* parse_for_loop(CompilerContext* ctx) {
+  Token* for_token = tokens_pop_expected(ctx, "for");
+  if (for_token == NULL) return NULL;
+  if (tokens_pop_expected(ctx, "(") == NULL) return NULL;
+  
+  List* token_list = ctx->tokens->tokens;
+  int token_index = ctx->tokens->index;
+  int token_len = ctx->tokens->length;
+  if (token_index + 2 >= token_len) {
+    while (tokens_has_more(ctx)) tokens_pop(ctx);
+    tokens_ensure_not_eof(ctx);
+    return NULL;
+  }
+  Token* t1 = (Token*) list_get(token_list, token_index);
+  Token* t2 = (Token*) list_get(token_list, token_index + 1);
+  int is_for_each = t1->type == TOKEN_TYPE_WORD && string_equals_chars(t2->value, ":");
+  List* code_block = new_list();
+  if (is_for_each) {
+    Token* iterator_variable = tokens_pop(ctx);
+    if (tokens_pop_expected(ctx, ":") == NULL) return NULL;
+    Node* list_expression = parse_expression(ctx);
+    if (list_expression == NULL) return NULL;
+    if (tokens_pop_expected(ctx, ")") == NULL) return NULL;
+    if (!parse_code_block(ctx, code_block, 0)) return NULL;
+    return new_for_each_loop(for_token, iterator_variable, list_expression, code_block);
+  }
+
+  List* inits = new_list();
+  if (!tokens_is_next(ctx, ";")) {
+    Node* init = parse_executable(ctx, 0, 0);
+    if (init == NULL) return NULL;
+    list_add(inits, init);
+    while (tokens_pop_if_next(ctx, ",")) {
+      init = parse_executable(ctx, 0, 0);
+      if (init == NULL) return NULL;
+      list_add(inits, init);
+    }
+  }
+  if (tokens_pop_expected(ctx, ";") == NULL) return NULL;
+  Node* condition = NULL;
+  if (!tokens_is_next(ctx, ";")) {
+    condition = parse_expression(ctx);
+    if (condition == NULL) return NULL;
+  }
+  if (tokens_pop_expected(ctx, ";") == NULL) return NULL;
+
+  List* steps = new_list();
+  if (!tokens_is_next(ctx, ")")) {
+    Node* step = parse_executable(ctx, 0, 0);
+    if (step == NULL) return NULL;
+    list_add(steps, step);
+    while (tokens_pop_if_next(ctx, ",")) {
+      step = parse_executable(ctx, 0, 0);
+      if (step == NULL) return NULL;
+      list_add(steps, step);
+    }
+  }
+  if (tokens_pop_expected(ctx, ")") == NULL) return NULL;
+  if (!parse_code_block(ctx, code_block, 0)) return NULL;
+  return new_for_loop(for_token, inits, condition, steps, code_block);
+}
 
 Node* parse_break(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_break"); return NULL; }
 Node* parse_continue(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_continue"); return NULL; }
 Node* parse_do_while_loop(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_do_while_loop"); return NULL; }
-Node* parse_for_loop(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_for_loop"); return NULL; }
 Node* parse_return(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_return"); return NULL; }
 Node* parse_switch(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_switch"); return NULL; }
 Node* parse_try(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_try"); return NULL; }
@@ -299,8 +359,13 @@ Node* parse_expr_ternary(CompilerContext* ctx) {
   Node* expr = parse_expr_boolean_combination(ctx);
   if (expr == NULL) return NULL;
   if (tokens_is_next(ctx, "?")) {
-    parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED! ternary");
-    return NULL;
+    Token* question_mark = tokens_pop(ctx);
+    Node* true_value = parse_expr_ternary(ctx);
+    if (true_value == NULL) return NULL;
+    if (tokens_pop_expected(ctx, ":") == NULL) return NULL;
+    Node* false_value = parse_expr_ternary(ctx);
+    if (false_value == NULL) return NULL;
+    return new_ternary(expr, question_mark, true_value, false_value);
   }
   return expr;
 }
@@ -350,8 +415,14 @@ Node* parse_expr_equality(CompilerContext* ctx) {
   Node* expr = parse_expr_inequality(ctx);
   if (expr == NULL) return NULL;
   if (tokens_is_next_str(ctx, op_equals) || tokens_is_next_str(ctx, op_neq)) {
-    parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: == and !=");
-    return NULL;
+    List* ops = new_list();
+    list_add(ops, tokens_pop(ctx));
+    Node* right = parse_expr_inequality(ctx);
+    if (right == NULL) return NULL;
+    List* expressions = new_list();
+    list_add(expressions, expr);
+    list_add(expressions, right);
+    return new_op_chain(expressions, ops);
   }
   return expr;
 }
@@ -555,12 +626,14 @@ Node* parse_expr_entity(CompilerContext* ctx) {
   switch (next->cstring[0]) {
     case 't': 
       if (string_equals(next, str_true)) {
-        parser_error_chars(ctx, tokens_peek_next(ctx), "TODO: true bool constant");
+        tokens_pop(ctx);
+        return new_boolean_constant(next_token, 1);
       }
       break;
     case 'f': 
       if (string_equals(next, str_false)) {
-        parser_error_chars(ctx, tokens_peek_next(ctx), "TODO: false bool constant");
+        tokens_pop(ctx);
+        return new_boolean_constant(next_token, 0);
       }
       break;
     case 'n': 
