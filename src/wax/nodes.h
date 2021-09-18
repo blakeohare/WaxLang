@@ -89,6 +89,25 @@ Assignment* new_assignment(Node* target, Token* op, Node* value) {
   return asgn;
 }
 
+typedef struct _IfStatement {
+  Node node;
+  Node* condition;
+  List* true_code;
+  List* false_code;
+} IfStatement;
+#define NODE_IF_STATEMENT_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
+#define NODE_IF_STATEMENT_NAME "IfStatement"
+
+IfStatement* new_if_statement(Token* if_token, Node* condition, List* true_code, List* false_code) {
+  IfStatement* ifstat = (IfStatement*) gc_create_struct(sizeof(IfStatement), NODE_IF_STATEMENT_NAME, NODE_IF_STATEMENT_GC_FIELD_COUNT);
+  ifstat->node.first_token = if_token;
+  ifstat->node.type = new_string(NODE_IF_STATEMENT_NAME);
+  ifstat->condition = condition;
+  ifstat->true_code = true_code;
+  ifstat->false_code = false_code;
+  return ifstat;
+}
+
 typedef struct _ExpressionAsExecutable {
   Node node;
   Node* expression;
@@ -112,11 +131,11 @@ typedef struct _StringConstant {
 #define NODE_STRING_CONSTANT_NAME "StringConstant"
 
 StringConstant* new_string_constant(Token* token, String* value) {
-  StringConstant* v = (StringConstant*) gc_create_struct(sizeof(StringConstant), NODE_STRING_CONSTANT_NAME, NODE_STRING_CONSTANT_GC_FIELD_COUNT);
-  v->node.first_token = token;
-  v->node.type = new_string(NODE_STRING_CONSTANT_NAME);
-  v->value = value;
-  return v;
+  StringConstant* str = (StringConstant*) gc_create_struct(sizeof(StringConstant), NODE_STRING_CONSTANT_NAME, NODE_STRING_CONSTANT_GC_FIELD_COUNT);
+  str->node.first_token = token;
+  str->node.type = new_string(NODE_STRING_CONSTANT_NAME);
+  str->value = value;
+  return str;
 }
 
 typedef struct _Variable {
@@ -132,6 +151,23 @@ Variable* new_variable(Token* token, String* name) {
   v->node.type = new_string(NODE_VARIABLE_NAME);
   v->name = name;
   return v;
+}
+
+typedef struct _InlineDictionary {
+  Node node;
+  List* keys;
+  List* values;
+} InlineDictionary;
+#define NODE_INLINE_DICTIONARY_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 2)
+#define NODE_INLINE_DICTIONARY_NAME "InlineDictionary"
+
+InlineDictionary* new_inline_dictionary(Token* first_token, List* keys, List* values) {
+  InlineDictionary* d = (InlineDictionary*) gc_create_struct(sizeof(InlineDictionary), NODE_INLINE_DICTIONARY_NAME, NODE_INLINE_DICTIONARY_GC_FIELD_COUNT);
+  d->node.first_token = first_token;
+  d->node.type = new_string(NODE_INLINE_DICTIONARY_NAME);
+  d->keys = keys;
+  d->values = values;
+  return d;
 }
 
 typedef struct _DotField {
@@ -176,11 +212,11 @@ typedef struct _FunctionInvocation {
   Token* open_paren;
   List* args;
 } FunctionInvocation;
-#define NODE_FUNCTION_INVOCATION_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 2)
+#define NODE_FUNCTION_INVOCATION_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
 #define NODE_FUNCTION_INVOCATION_NAME "FunctionInvocation"
 
 FunctionInvocation* new_function_invocation(Node* root_expression, Token* open_paren, List* args) {
-  FunctionInvocation* fi = (FunctionInvocation*) gc_create_struct(sizeof(OpChain), NODE_FUNCTION_INVOCATION_NAME, NODE_FUNCTION_INVOCATION_GC_FIELD_COUNT);
+  FunctionInvocation* fi = (FunctionInvocation*) gc_create_struct(sizeof(FunctionInvocation), NODE_FUNCTION_INVOCATION_NAME, NODE_FUNCTION_INVOCATION_GC_FIELD_COUNT);
   fi->node.first_token = root_expression->first_token;
   fi->node.type = new_string(NODE_FUNCTION_INVOCATION_NAME);
   fi->root = root_expression;

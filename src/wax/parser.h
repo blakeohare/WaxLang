@@ -186,11 +186,27 @@ Node* parse_executable(CompilerContext* ctx, int allow_complex, int with_semicol
   return ex;
 }
 
+Node* parse_if(CompilerContext* ctx) {
+  Token* if_token = tokens_pop_expected(ctx, "if");
+  if (if_token == NULL) return NULL;
+  if (tokens_pop_expected(ctx, "(") == NULL) return NULL;
+  Node* condition = parse_expression(ctx);
+  if (condition == NULL) return NULL;
+  if (tokens_pop_expected(ctx, ")") == NULL) return NULL;
+
+  List* true_code = new_list();
+  if (!parse_code_block(ctx, true_code, 0)) return NULL;
+  List* false_code = new_list();
+  if (tokens_pop_if_next(ctx, "else")) {
+    if (!parse_code_block(ctx, false_code, 0)) return NULL;
+  }
+  return new_if_statement(if_token, condition, true_code, false_code);
+}
+
 Node* parse_break(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_break"); return NULL; }
 Node* parse_continue(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_continue"); return NULL; }
 Node* parse_do_while_loop(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_do_while_loop"); return NULL; }
 Node* parse_for_loop(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_for_loop"); return NULL; }
-Node* parse_if(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_if"); return NULL; }
 Node* parse_return(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_return"); return NULL; }
 Node* parse_switch(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_switch"); return NULL; }
 Node* parse_try(CompilerContext* ctx) { parser_error_next_chars(ctx, "NOT IMPLEMENTED: parse_try"); return NULL; }
@@ -464,7 +480,7 @@ Node* parse_expr_entity_with_suffix(CompilerContext* ctx) {
           Token* dot_token = tokens_pop(ctx);
           Token* field_token = tokens_pop(ctx);
           if (field_token == NULL) return NULL;
-          if (token_is_name(field_token)) {
+          if (!token_is_name(field_token)) {
             parser_error(ctx, field_token, string_concat3("Expected a field name but found '", field_token->value->cstring, "'."));
             return NULL;
           }
@@ -477,7 +493,6 @@ Node* parse_expr_entity_with_suffix(CompilerContext* ctx) {
       case '(':
         {
           Token* open_paren = tokens_pop(ctx);
-          printf("I popped the open paren and it is %s\n", open_paren->value->cstring);
           List* args = new_list();
           while (!tokens_pop_if_next(ctx, ")")) {
             if (args->length > 0) {
@@ -537,6 +552,35 @@ Node* parse_expr_entity(CompilerContext* ctx) {
         parser_error_chars(ctx, tokens_peek_next(ctx), "TODO: null constant");
       }
       break;
+    case '[':
+      parser_error_chars(ctx, next_token, "TODO: inline list definitions");
+      return NULL;
+    case '{': {
+        Token* open_curly_brace = tokens_pop(ctx);
+        List* keys = new_list();
+        List* values = new_list();
+        int allow_next = 1;
+        while (!tokens_pop_if_next(ctx, "}")) {
+          if (!allow_next) {
+            tokens_pop_expected(ctx, "}"); // pushes error
+            return NULL;
+          }
+          if (!tokens_ensure_not_eof(ctx)) return NULL;
+          Node* key = parse_expr_entity(ctx);
+          if (!string_equals_chars(key->type, NODE_STRING_CONSTANT_NAME)) {
+            parser_error_chars(ctx, next_token, "Only a string can be the key of a dictionary definition.");
+            return NULL;
+          }
+          list_add(keys, key);
+          if (tokens_pop_expected(ctx, ":") == NULL) return NULL;
+          Node* value = parse_expression(ctx);
+          if (value == NULL) return NULL;
+          list_add(values, value);
+
+          allow_next = tokens_pop_if_next(ctx, ",");
+        }
+        return new_inline_dictionary(open_curly_brace, keys, values);
+      }
   }
 
   if (next_token->type == TOKEN_TYPE_FLOAT) {
