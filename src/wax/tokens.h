@@ -175,6 +175,8 @@ TokenStream* tokenize(String* filename, String* content) {
           enum TokenType tt = TOKEN_TYPE_WORD;
           if (dictionary_has_key(keywords, str_temp)) {
             tt = TOKEN_TYPE_KEYWORD;
+          } else if (str_temp->cstring[0] >= '0' && str_temp->cstring[0] <= '9') {
+            tt = TOKEN_TYPE_INTEGER;
           }
           list_add(tokens, new_token(filename, str_temp, lines[token_start], cols[token_start], tt));
         }

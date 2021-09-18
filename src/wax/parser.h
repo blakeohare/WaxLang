@@ -514,6 +514,7 @@ Node* parse_expr_entity_with_suffix(CompilerContext* ctx) {
 }
 
 String* parse_string_value(CompilerContext* ctx, Token* throw_token, String* string_token_value);
+int parse_integer_value(CompilerContext* ctx, Token* throw_token, String* raw_value, int* value_out);
 
 Node* parse_expr_entity(CompilerContext* ctx) {
 
@@ -589,8 +590,10 @@ Node* parse_expr_entity(CompilerContext* ctx) {
   }
 
   if (next_token->type == TOKEN_TYPE_INTEGER) {
-    parser_error_chars(ctx, next_token, "TODO: ints");
-    return NULL;
+    tokens_pop(ctx);
+    int value;
+    if (!parse_integer_value(ctx, next_token, next_token->value, &value)) return NULL;
+    return new_integer_constant(next_token, value);
   }
 
   if (next_token->type == TOKEN_TYPE_STRING) {
@@ -606,6 +609,44 @@ Node* parse_expr_entity(CompilerContext* ctx) {
 
   parser_error(ctx, next_token, string_concat3("Unexpected token :'", next->cstring, "'."));
   return NULL;
+}
+
+int parse_integer_value(CompilerContext* ctx, Token* throw_token, String* raw_value, int* value_out) {
+  int output = 0;
+  int sign = 1;
+  char* str = raw_value->cstring;
+  int start = 0;
+  int len = raw_value->length;
+  if (str[0] == '-') {
+    sign = -1;
+    start = 1;
+  }
+  int is_hex = 0;
+  for (int i = start; i < len; i++) {
+    char c = str[i];
+    if ((c == 'x' || c == 'X') && i - start == 1 && output == 0) {
+      is_hex = 1;
+    } else {
+      int digit_value = -1;
+      if (c >= '0' && c <= '9') {
+        digit_value = c - '0';
+      } else if (c >= 'A' && c <= 'F') {
+        digit_value = c - 'A' + 10;
+      } else if (c >= 'a' && c <= 'f') {
+        digit_value = c - 'a' + 10;
+      } else {
+        parser_error(ctx, throw_token, string_concat3("Invalid integer constant: '", raw_value->cstring, "'."));
+        return NULL;
+      }
+
+      if (digit_value >= 10 && !is_hex) {
+        parser_error(ctx, throw_token, "Invalid integer constant. If this is a hexadecimal number, it must start with a '0x' prefix");
+        return NULL;
+      }
+      output = output * (is_hex ? 16 : 10) + digit_value;
+    }
+  }
+  *value_out = output * sign;
 }
 
 String* parse_string_value(CompilerContext* ctx, Token* throw_token, String* string_token_value) {

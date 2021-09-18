@@ -123,6 +123,21 @@ ExpressionAsExecutable* new_expression_as_executable(Node* expr) {
   return ee;
 }
 
+typedef struct _IntegerConstant {
+  Node node;
+  int value;
+} IntegerConstant;
+#define NODE_INTEGER_CONSTANT_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 0)
+#define NODE_INTEGER_CONSTANT_NAME "IntegerConstant"
+
+IntegerConstant* new_integer_constant(Token* token, int value) {
+  IntegerConstant* str = (IntegerConstant*) gc_create_struct(sizeof(IntegerConstant), NODE_INTEGER_CONSTANT_NAME, NODE_INTEGER_CONSTANT_GC_FIELD_COUNT);
+  str->node.first_token = token;
+  str->node.type = new_string(NODE_INTEGER_CONSTANT_NAME);
+  str->value = value;
+  return str;
+}
+
 typedef struct _StringConstant {
   Node node;
   String* value;
