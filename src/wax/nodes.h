@@ -70,18 +70,86 @@ typedef struct _FieldDefinition {
 #define FIELD_DEFINITION_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 2)
 #define FIELD_DEFINITION_NAME "FieldDefinition"
 
+typedef struct _Assignment {
+  Node node;
+  Node* target;
+  Token* assignment_op;
+  Node* value;
+} Assignment;
+#define NODE_ASSIGNMENT_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
+#define NODE_ASSIGNMENT_NAME "Assignment"
+
+Assignment* new_assignment(Node* target, Token* op, Node* value) {
+  Assignment* asgn = (Assignment*) gc_create_struct(sizeof(Assignment), NODE_ASSIGNMENT_NAME, NODE_ASSIGNMENT_GC_FIELD_COUNT);
+  asgn->node.first_token = target->first_token;
+  asgn->node.type = new_string(NODE_ASSIGNMENT_NAME);
+  asgn->target = target;
+  asgn->assignment_op = op;
+  asgn->value = value;
+  return asgn;
+}
+
+typedef struct _ExpressionAsExecutable {
+  Node node;
+  Node* expression;
+} ExpressionAsExecutable;
+#define NODE_EXPR_EXEC_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 1)
+#define NODE_EXPR_EXEC_NAME "ExpressionAsExecutable"
+
+ExpressionAsExecutable* new_expression_as_executable(Node* expr) {
+  ExpressionAsExecutable* ee = (ExpressionAsExecutable*) gc_create_struct(sizeof(ExpressionAsExecutable), NODE_EXPR_EXEC_NAME, NODE_EXPR_EXEC_GC_FIELD_COUNT);
+  ee->node.first_token = expr->first_token;
+  ee->node.type = new_string(NODE_EXPR_EXEC_NAME);
+  ee->expression = expr;
+  return ee;
+}
+
+typedef struct _Variable {
+  Node node;
+  String* name;
+} Variable;
+#define NODE_VARIABLE_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 1)
+#define NODE_VARIABLE_NAME "Variable"
+
+Variable* new_variable(Token* token, String* name) {
+  Variable* v = (Variable*) gc_create_struct(sizeof(Variable), NODE_VARIABLE_NAME, NODE_VARIABLE_GC_FIELD_COUNT);
+  v->node.first_token = token;
+  v->node.type = new_string(NODE_VARIABLE_NAME);
+  v->name = name;
+  return v;
+}
+
+typedef struct _DotField {
+  Node node;
+  Node* root;
+  Token* dot_token;
+  Token* field_token;
+} DotField;
+#define NODE_DOT_FIELD_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
+#define NODE_DOT_FIELD_NAME "DotToken"
+
+DotField* new_dot_field(Node* root_expression, Token* dot_token, Token* field_token) {
+  DotField* df = (DotField*) gc_create_struct(sizeof(DotField), NODE_DOT_FIELD_NAME, NODE_DOT_FIELD_GC_FIELD_COUNT);
+  df->node.first_token = root_expression->first_token;
+  df->node.type = new_string(NODE_DOT_FIELD_NAME);
+  df->root = root_expression;
+  df->dot_token = dot_token;
+  df->field_token = field_token;
+  return df;
+}
+
 typedef struct _OpChain {
   Node node;
   List* expressions;
   List* ops;
 } OpChain;
-#define NODE_OP_CHAIN_DEFINITION_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 2)
-#define NODE_OP_CHAIN_DEFINITION_NAME "OpChain"
+#define NODE_OP_CHAIN_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 2)
+#define NODE_OP_CHAIN_NAME "OpChain"
 
 OpChain* new_op_chain(List* expressions, List* ops) {
-  OpChain* oc = (OpChain*) gc_create_struct(sizeof(OpChain), NODE_OP_CHAIN_DEFINITION_NAME, NODE_OP_CHAIN_DEFINITION_GC_FIELD_COUNT);
+  OpChain* oc = (OpChain*) gc_create_struct(sizeof(OpChain), NODE_OP_CHAIN_NAME, NODE_OP_CHAIN_GC_FIELD_COUNT);
   oc->node.first_token = ((Node*) list_get(expressions, 0))->first_token;
-  oc->node.type = new_string(NODE_OP_CHAIN_DEFINITION_NAME);
+  oc->node.type = new_string(NODE_OP_CHAIN_NAME);
   oc->expressions = list_clone(expressions);
   oc->ops = list_clone(ops);
   return oc;

@@ -98,6 +98,12 @@ String* tokens_peek_next_value_no_eof(CompilerContext* ctx) {
   return next;
 }
 
+Token* tokens_peek_next_no_eof(CompilerContext* ctx) {
+  Token* next = tokens_peek_next(ctx);
+  if (next == NULL) tokens_ensure_not_eof(ctx);
+  return next;
+}
+
 int tokens_pop_if_next(CompilerContext* ctx, const char* token) {
   String* next = tokens_peek_next_value(ctx);
   if (next != NULL && string_equals_chars(next, token)) {
@@ -111,6 +117,12 @@ int tokens_is_next(CompilerContext* ctx, const char* token) {
   String* next = tokens_peek_next_value(ctx);
   if (next == NULL) return 0;
   return strcmp(token, next->cstring) == 0 ? 1 : 0;
+}
+
+int tokens_is_next_str(CompilerContext* ctx, String* token) {
+  String* next = tokens_peek_next_value(ctx);
+  if (next == NULL) return 0;
+  return string_equals(token, next);
 }
 
 #endif

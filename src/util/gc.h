@@ -227,4 +227,10 @@ void gc_perform_pass() {
   gc_run();
 }
 
+String* new_common_string(const char* str) {
+  String* value = new_string(str);
+  gc_save_item(value);
+  return value;
+}
+
 #endif
