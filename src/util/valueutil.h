@@ -22,7 +22,7 @@ void _unknown_value_to_string(void* item, StringBuilder* sb) {
     case 'N':
       string_builder_append_chars(sb, "<null>");
       break;
-    case 'I': 
+    case 'I':
       {
         int value = ((Integer*)item)->value;
         if (value <= 0) {

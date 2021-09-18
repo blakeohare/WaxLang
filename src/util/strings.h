@@ -175,7 +175,7 @@ int string_equals(String* a, String* b) {
 
 String* string_replace(const char* value, const char* old_value, const char* new_value) {
   StringBuilder* output = new_string_builder();
-  
+
   int old_len = strlen(old_value);
   int new_len = strlen(new_value);
   if (old_len == 0) return new_string(value);
@@ -203,7 +203,7 @@ String* string_replace(const char* value, const char* old_value, const char* new
       i++;
     }
   }
-  
+
   String* str = string_builder_to_string(output);
   string_builder_free(output);
   return str;

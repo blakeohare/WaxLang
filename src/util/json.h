@@ -190,7 +190,7 @@ void* json_parse_number(JsonParserContext* ctx) {
 
     if (c == '.') {
       if (decimal_found) {
-        string_builder_free(sb); 
+        string_builder_free(sb);
         return json_throw_error(ctx, JSON_ERROR_BAD_SYNTAX);
       }
       decimal_found = 1;
@@ -267,7 +267,7 @@ void json_print_error(JsonParseResult result) {
 
 JsonParseResult json_parse(char* data) {
   JsonParseResult result;
-  
+
   String* str = string_replace(data, "\r\n", "\n");
   str = string_replace(str->cstring, "\r", "\n");
 

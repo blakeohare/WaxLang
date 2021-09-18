@@ -73,7 +73,7 @@ int parse_class(CompilerContext* ctx) {
     if (next == NULL) {
       return 0;
     }
-    
+
     Token* next_token = tokens_peek_next(ctx);
     if (string_equals(next, str_function)) {
       FunctionDefinition* fd = parse_function(ctx);
@@ -206,7 +206,7 @@ Node* parse_for_loop(CompilerContext* ctx) {
   Token* for_token = tokens_pop_expected(ctx, "for");
   if (for_token == NULL) return NULL;
   if (tokens_pop_expected(ctx, "(") == NULL) return NULL;
-  
+
   List* token_list = ctx->tokens->tokens;
   int token_index = ctx->tokens->index;
   int token_len = ctx->tokens->length;
@@ -319,11 +319,11 @@ FunctionDefinition* parse_function(CompilerContext* ctx) {
     parser_error(ctx, function_name, string_concat3("Expected a function name but found '", function_name->value->cstring, "' instead."));
     return NULL;
   }
-  
+
   FunctionDefinition* func_def = new_function_definition(function_token, function_name);
 
   if (!parse_arg_list(ctx, func_def->arg_tokens, func_def->arg_default_values)) return NULL;
-  
+
   if (!parse_code_block(ctx, func_def->code, 1)) return NULL;
 
   return func_def;
@@ -377,7 +377,7 @@ Node* parse_expr_boolean_combination(CompilerContext* ctx) {
     op_and = new_common_string("&&");
     op_or = new_common_string("||");
   }
-  
+
   Node* expr = parse_expr_bitwise(ctx);
   if (expr == NULL) return NULL;
   if (tokens_is_next_str(ctx, op_and) || tokens_is_next_str(ctx, op_or)) {
@@ -501,8 +501,8 @@ Node* parse_expr_multiplication(CompilerContext* ctx) {
   }
   Node* expr = parse_expr_postprefix(ctx);
   if (expr == NULL) return NULL;
-  if (tokens_is_next_str(ctx, op_mul) || 
-      tokens_is_next_str(ctx, op_div) || 
+  if (tokens_is_next_str(ctx, op_mul) ||
+      tokens_is_next_str(ctx, op_div) ||
       tokens_is_next_str(ctx, op_mod)) {
     parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: * / and %");
     return NULL;
@@ -572,7 +572,7 @@ Node* parse_expr_entity_with_suffix(CompilerContext* ctx) {
           Node* index_expression = parse_expression(ctx);
           if (index_expression == NULL) return NULL;
           if (tokens_pop_expected(ctx, "]") == NULL) return NULL;
-          
+
           expr = (Node*) new_bracket_index(expr, open_bracket, index_expression);
         }
         break;
@@ -625,19 +625,19 @@ Node* parse_expr_entity(CompilerContext* ctx) {
   String* next = next_token->value;
 
   switch (next->cstring[0]) {
-    case 't': 
+    case 't':
       if (string_equals(next, str_true)) {
         tokens_pop(ctx);
         return new_boolean_constant(next_token, 1);
       }
       break;
-    case 'f': 
+    case 'f':
       if (string_equals(next, str_false)) {
         tokens_pop(ctx);
         return new_boolean_constant(next_token, 0);
       }
       break;
-    case 'n': 
+    case 'n':
       if (string_equals(next, str_null)) {
           return new_null_constant(tokens_pop(ctx));
       }

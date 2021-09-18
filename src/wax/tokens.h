@@ -5,13 +5,13 @@
 #include "../util/lists.h"
 #include "../util/valueutil.h"
 
-enum TokenType { 
+enum TokenType {
   TOKEN_TYPE_PUNC,
   TOKEN_TYPE_STRING,
   TOKEN_TYPE_INTEGER,
   TOKEN_TYPE_FLOAT,
   TOKEN_TYPE_WORD,
-  TOKEN_TYPE_KEYWORD 
+  TOKEN_TYPE_KEYWORD
 };
 
 #define TOKEN_GC_FIELD_COUNT 2
@@ -68,7 +68,7 @@ TokenStream* tokenize(String* filename, String* content) {
   token_stream->length = 0;
   token_stream->error_token = NULL;
   token_stream->tokens = new_list();
-  
+
   content = string_concat(string_replace(content->cstring, "\r\n", "\n")->cstring, "\n");
   const char* chars = content->cstring;
   int len = content->length;
@@ -139,7 +139,7 @@ TokenStream* tokenize(String* filename, String* content) {
           list_add(tokens, new_token(filename, new_string(single_char_buf), lines[i], cols[i], TOKEN_TYPE_PUNC));
         }
         break;
-      
+
       case 'S':
         if (c == '\\') {
           ++i; // worry about if the escape sequence is valid later
@@ -149,7 +149,7 @@ TokenStream* tokenize(String* filename, String* content) {
           state = 'N';
         }
         break;
-      
+
       case 'C':
         if (token_type == '/') {
           if (c == '\n') {
@@ -162,13 +162,13 @@ TokenStream* tokenize(String* filename, String* content) {
           }
         }
         break;
-      
+
       case 'W':
         if ((c < 'a' || c > 'z') &&
             (c < 'A' || c > 'Z') &&
             (c < '0' || c > '9') &&
             c != '_') {
-          
+
           str_temp = new_string_from_range(chars, token_start, i);
           --i;
           state = 'N';

@@ -14,7 +14,7 @@
 Dictionary* wax_compiler_get_files(const char* path) {
   List* files = directory_gather_files_recursive(path);
   if (files == NULL) return NULL;
-  
+
   String* dot_wax = new_string(".wax");
   Dictionary* src_files = new_dictionary();
   for (int j = 0; j < files->length; ++j) {

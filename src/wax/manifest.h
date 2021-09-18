@@ -47,7 +47,7 @@ ModuleMetadata* new_module_metadata(String* name, String* src, String* action, S
   mm->name = name;
   mm->src = src;
 
-  if (string_equals_chars(action, "bundle")) mm->action = ACTION_BUNDLE; 
+  if (string_equals_chars(action, "bundle")) mm->action = ACTION_BUNDLE;
   else if (string_equals_chars(action, "extension")) mm->action = ACTION_EXTENSION;
   else if (string_equals_chars(action, "service")) mm->action = ACTION_SERVICE;
   else mm->action = ACTION_UNKNOWN;
@@ -90,7 +90,7 @@ Dictionary* wax_manifest_load_impl(const char* path) {
   String* file_content = file_read_text(path);
   if (file_content == NULL)
     return wax_manifest_make_error_dict(string_concat3("Error while reading file: '", path, "'"));
-    
+
   JsonParseResult json_result = json_parse(file_content->cstring);
   if (json_result.error)
     return wax_manifest_make_error_dict(string_concat4("JSON error while parsing '", path, "': ", json_get_error(json_result)->cstring));
@@ -119,7 +119,7 @@ Dictionary* wax_manifest_load_impl(const char* path) {
   if (inherit_path != NULL) {
     if (!is_string(inherit_path)) return wax_manifest_make_error_dict(string_concat3("Inherit field in '", path, "' does not contain a string."));
     String* canonicalized_inherit_path = normalize_path(string_concat3(path, "/../", ((String*)inherit_path)->cstring)->cstring);
-    
+
     Dictionary* parent_manifest = wax_manifest_load_impl(canonicalized_inherit_path->cstring);
 
     if (dictionary_has_key(parent_manifest, str_error)) return parent_manifest;
@@ -128,7 +128,7 @@ Dictionary* wax_manifest_load_impl(const char* path) {
       String* key = list_get_string(keys, i);
       void* value = dictionary_get(manifest, key);
       void* parent_value = dictionary_get(parent_manifest, key);
-      
+
       // for moduleTargets, append the manifest's value after the parent's value
       if (string_equals(key, str_module_targets) && is_list(value) && is_list(parent_value)) {
         list_push_all(parent_value, value);

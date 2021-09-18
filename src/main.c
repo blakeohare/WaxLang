@@ -21,12 +21,12 @@ int main(int argc, char** argv) {
   }
 
   ProjectManifest* manifest = wax_manifest_load(argv[1]);
-  
+
   if (manifest->has_error) {
     printf("%s\n", manifest->error->cstring);
   } else {
     gc_save_item(manifest);
-    
+
     List* modules = manifest->modules;
     for (int i = 0; i < modules->length; ++i) {
       ModuleMetadata* mm = (ModuleMetadata*) modules->items[i];
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 
     gc_release_item(manifest);
   }
-  
+
   gc_perform_pass();
 
   return 0;

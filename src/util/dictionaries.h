@@ -66,7 +66,7 @@ void _dict_rehash(Dictionary* dict) {
     dict->buckets[bucket_index] = entry;
   }
   dict->bucket_length = new_length;
-  
+
   for (int i = 0; i < dict->bucket_length; ++i) {
     DictEntry* walker = dict->buckets[i];
     while (walker != NULL) {
@@ -89,7 +89,7 @@ void _dict_rehash(Dictionary* dict) {
 int _dict_get_index(Dictionary* dict, String* key, int create_if_missing) {
   if (dict->buckets == NULL) {
     if (!create_if_missing) return -1;
-    
+
     dict->bucket_length = 8;
     dict->size = 0;
     dict->buckets = (DictEntry**) malloc_ptr_array(dict->bucket_length);
@@ -101,7 +101,7 @@ int _dict_get_index(Dictionary* dict, String* key, int create_if_missing) {
   for (DictEntry* walker = dict->buckets[bucket_index]; walker != NULL; walker = walker->next) {
     if (string_equals(walker->key, key)) return walker->index;
   }
-  
+
   if (create_if_missing) {
     int index = dict->size;
     dict->keys[index] = key;
@@ -113,7 +113,7 @@ int _dict_get_index(Dictionary* dict, String* key, int create_if_missing) {
     dict->buckets[bucket_index] = entry;
 
     if (dict->size > dict->bucket_length) _dict_rehash(dict);
-    
+
     return index;
   }
   return -1;
@@ -125,11 +125,11 @@ int dictionary_set(Dictionary* dict, String* key, void* value) {
   int index = _dict_get_index(dict, key, 1);
   dict->values[index] = value;
   if (dict->size > original_size) {
-    // only overwrite the key if it was added so that the 
-    // actual string instance is the same in the DictEntry 
+    // only overwrite the key if it was added so that the
+    // actual string instance is the same in the DictEntry
     // as in the Key list so that garbage collection has
     // fewer collections to step through.
-    dict->keys[index] = key; 
+    dict->keys[index] = key;
     return 0;
   }
   return 1;
