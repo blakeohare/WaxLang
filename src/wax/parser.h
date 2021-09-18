@@ -617,6 +617,7 @@ Node* parse_expr_entity(CompilerContext* ctx) {
     tokens_pop(ctx);
     Node* expr = parse_expression(ctx);
     if (tokens_pop_expected(ctx, ")") == NULL) return NULL;
+    return expr;
   }
 
   if (!tokens_ensure_not_eof(ctx)) return NULL;
@@ -638,7 +639,7 @@ Node* parse_expr_entity(CompilerContext* ctx) {
       break;
     case 'n': 
       if (string_equals(next, str_null)) {
-        parser_error_chars(ctx, tokens_peek_next(ctx), "TODO: null constant");
+          return new_null_constant(tokens_pop(ctx));
       }
       break;
     case '[':

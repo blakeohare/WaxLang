@@ -163,6 +163,19 @@ ExpressionAsExecutable* new_expression_as_executable(Node* expr) {
   return ee;
 }
 
+typedef struct _NullConstant {
+  Node node;
+} NullConstant;
+#define NODE_NULL_CONSTANT_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 0)
+#define NODE_NULL_CONSTANT_NAME "NullConstant"
+
+NullConstant* new_null_constant(Token* token) {
+  NullConstant* nc = (NullConstant*) gc_create_struct(sizeof(NullConstant), NODE_NULL_CONSTANT_NAME, NODE_NULL_CONSTANT_GC_FIELD_COUNT);
+  nc->node.first_token = token;
+  nc->node.type = new_string(NODE_NULL_CONSTANT_NAME);
+  return nc;
+}
+
 typedef struct _BooleanConstant {
   Node node;
   int value;
