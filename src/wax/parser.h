@@ -405,8 +405,16 @@ Node* parse_expr_addition(CompilerContext* ctx) {
   Node* expr = parse_expr_multiplication(ctx);
   if (expr == NULL) return NULL;
   if (tokens_is_next_str(ctx, op_add) || tokens_is_next_str(ctx, op_sub)) {
-    parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: + and -");
-    return NULL;
+    List* expressions = new_list();
+    list_add(expressions, expr);
+    List* ops = new_list();
+    while (tokens_is_next_str(ctx, op_add) || tokens_is_next_str(ctx, op_sub)) {
+      list_add(ops, tokens_pop(ctx));
+      Node* next_expr = parse_expr_multiplication(ctx);
+      if (next_expr == NULL) return NULL;
+      list_add(expressions, next_expr);
+    }
+    return new_op_chain(expressions, ops);
   }
   return expr;
 }
@@ -488,8 +496,15 @@ Node* parse_expr_entity_with_suffix(CompilerContext* ctx) {
         }
         break;
       case '[':
-        parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: bracket index");
-        return NULL;
+        {
+          Token* open_bracket = tokens_pop(ctx);
+          Node* index_expression = parse_expression(ctx);
+          if (index_expression == NULL) return NULL;
+          if (tokens_pop_expected(ctx, "]") == NULL) return NULL;
+          
+          expr = (Node*) new_bracket_index(expr, open_bracket, index_expression);
+        }
+        break;
       case '(':
         {
           Token* open_paren = tokens_pop(ctx);

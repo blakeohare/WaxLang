@@ -204,6 +204,25 @@ DotField* new_dot_field(Node* root_expression, Token* dot_token, Token* field_to
   return df;
 }
 
+typedef struct _BracketIndex {
+  Node node;
+  Node* root;
+  Token* bracket_token;
+  Node* index;
+} BracketIndex;
+#define NODE_BRACKET_INDEX_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
+#define NODE_BRACKET_INDEX_FIELD_NAME "BracketIndex"
+
+BracketIndex* new_bracket_index(Node* root_expression, Token* bracket_token, Node* index_expr) {
+  BracketIndex* bi = (BracketIndex*) gc_create_struct(sizeof(BracketIndex), NODE_BRACKET_INDEX_FIELD_NAME, NODE_BRACKET_INDEX_GC_FIELD_COUNT);
+  bi->node.first_token = root_expression->first_token;
+  bi->node.type = new_string(NODE_BRACKET_INDEX_FIELD_NAME);
+  bi->root = root_expression;
+  bi->bracket_token = bracket_token;
+  bi->index = index_expr;
+  return bi;
+}
+
 typedef struct _OpChain {
   Node node;
   List* expressions;
