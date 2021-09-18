@@ -104,6 +104,21 @@ ExpressionAsExecutable* new_expression_as_executable(Node* expr) {
   return ee;
 }
 
+typedef struct _StringConstant {
+  Node node;
+  String* value;
+} StringConstant;
+#define NODE_STRING_CONSTANT_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 1)
+#define NODE_STRING_CONSTANT_NAME "StringConstant"
+
+StringConstant* new_string_constant(Token* token, String* value) {
+  StringConstant* v = (StringConstant*) gc_create_struct(sizeof(StringConstant), NODE_STRING_CONSTANT_NAME, NODE_STRING_CONSTANT_GC_FIELD_COUNT);
+  v->node.first_token = token;
+  v->node.type = new_string(NODE_STRING_CONSTANT_NAME);
+  v->value = value;
+  return v;
+}
+
 typedef struct _Variable {
   Node node;
   String* name;
@@ -154,5 +169,25 @@ OpChain* new_op_chain(List* expressions, List* ops) {
   oc->ops = list_clone(ops);
   return oc;
 }
+
+typedef struct _FunctionInvocation {
+  Node node;
+  Node* root;
+  Token* open_paren;
+  List* args;
+} FunctionInvocation;
+#define NODE_FUNCTION_INVOCATION_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 2)
+#define NODE_FUNCTION_INVOCATION_NAME "FunctionInvocation"
+
+FunctionInvocation* new_function_invocation(Node* root_expression, Token* open_paren, List* args) {
+  FunctionInvocation* fi = (FunctionInvocation*) gc_create_struct(sizeof(OpChain), NODE_FUNCTION_INVOCATION_NAME, NODE_FUNCTION_INVOCATION_GC_FIELD_COUNT);
+  fi->node.first_token = root_expression->first_token;
+  fi->node.type = new_string(NODE_FUNCTION_INVOCATION_NAME);
+  fi->root = root_expression;
+  fi->open_paren = open_paren;
+  fi->args = args;
+  return fi;
+}
+
 
 #endif

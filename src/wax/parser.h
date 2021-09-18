@@ -443,6 +443,7 @@ Node* parse_expr_postprefix(CompilerContext* ctx) {
   }
 
   Node* expr = parse_expr_entity_with_suffix(ctx);
+  if (expr == NULL) return NULL;
   while (tokens_is_next_str(ctx, op_pp) || tokens_is_next_str(ctx, op_mm)) {
     parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: ++ and -- suffix");
     return NULL;
@@ -474,8 +475,21 @@ Node* parse_expr_entity_with_suffix(CompilerContext* ctx) {
         parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: bracket index");
         return NULL;
       case '(':
-        parser_error_chars(ctx, tokens_peek_next(ctx), "NOT IMPLEMENTED: invoke function");
-        return NULL;
+        {
+          Token* open_paren = tokens_pop(ctx);
+          printf("I popped the open paren and it is %s\n", open_paren->value->cstring);
+          List* args = new_list();
+          while (!tokens_pop_if_next(ctx, ")")) {
+            if (args->length > 0) {
+              if (tokens_pop_expected(ctx, ",") == NULL) return NULL;
+            }
+            Node* arg = parse_expression(ctx);
+            if (arg == NULL) return NULL;
+            list_add(args, arg);
+          }
+          expr = (Node*) new_function_invocation(expr, open_paren,  args);
+        }
+        break;
       default:
         return expr;
     }
@@ -483,6 +497,8 @@ Node* parse_expr_entity_with_suffix(CompilerContext* ctx) {
   }
   return expr;
 }
+
+String* parse_string_value(CompilerContext* ctx, Token* throw_token, String* string_token_value);
 
 Node* parse_expr_entity(CompilerContext* ctx) {
 
@@ -534,8 +550,9 @@ Node* parse_expr_entity(CompilerContext* ctx) {
   }
 
   if (next_token->type == TOKEN_TYPE_STRING) {
-    parser_error_chars(ctx, next_token, "TODO: strings");
-    return NULL;
+    tokens_pop(ctx);
+    String* str_value = parse_string_value(ctx, next_token, next);
+    return new_string_constant(next_token, str_value);
   }
 
   if (next_token->type == TOKEN_TYPE_WORD) {
@@ -547,5 +564,37 @@ Node* parse_expr_entity(CompilerContext* ctx) {
   return NULL;
 }
 
+String* parse_string_value(CompilerContext* ctx, Token* throw_token, String* string_token_value) {
+  StringBuilder* sb = new_string_builder();
+  const char* str = string_token_value->cstring;
+  int len = string_token_value->length - 1;
+  for (int i = 1; i < len; ++i) {
+    char c = str[i];
+    if (c == '\\') {
+      if (i + 1 < len) {
+        parser_error_chars(ctx, throw_token, "String ends with an unescaped backslash");
+        return NULL;
+      }
+      c = str[++i];
+      switch (c) {
+        case 'n': c = '\n'; break;
+        case 'r': c = '\r'; break;
+        case 't': c = '\t'; break;
+        case '"': c = '"'; break;
+        case '\'': c = '\''; break;
+        case '0': c = '\0'; break;
+        case '\\': c = '\\'; break;
+        default:
+          {
+            const char c2[2] = { c, '\0' };
+            parser_error(ctx, throw_token, string_concat("Invalid string escape sequence: \\", c2));
+          }
+          return NULL;
+      }
+    }
+    string_builder_append_char(sb, c);
+  }
+  return string_builder_to_string_and_free(sb);
+}
 
 #endif
