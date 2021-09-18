@@ -9,6 +9,7 @@
 #include "tokens.h"
 #include "compilercontext.h"
 #include "parser.h"
+#include "resolver.h"
 
 Dictionary* wax_compiler_get_files(const char* path) {
   List* files = directory_gather_files_recursive(path);
@@ -50,6 +51,10 @@ void wax_compile(ProjectManifest* manifest, ModuleMetadata* module) {
     gc_perform_pass();
   }
 
+  if (ctx->error_messages->length == 0) {
+    wax_resolve_module(ctx);
+  }
+
   List* errors = ctx->error_messages;
   List* error_tokens = ctx->error_tokens;
   if (errors->length > 0) {
@@ -62,6 +67,8 @@ void wax_compile(ProjectManifest* manifest, ModuleMetadata* module) {
       }
       printf("%s\n", list_get_string(errors, i)->cstring);
     }
+  } else {
+    printf("Success!\n");
   }
 
   gc_release_item(src_files);

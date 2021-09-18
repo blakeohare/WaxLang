@@ -8,6 +8,13 @@
 #include "wax/compiler.h"
 
 int main(int argc, char** argv) {
+  argc = 2;
+  char* arg[2];
+  char* arg1 = "../samples/PrimeExample/manifest.python.json";
+  argv = arg;
+  argv[0] = arg1;
+  argv[1] = arg1;
+  argv = &arg;
   if (argc != 2) {
     printf("Usage: waxcli manifest-file.json\n");
     return 0;
@@ -24,8 +31,9 @@ int main(int argc, char** argv) {
     for (int i = 0; i < modules->length; ++i) {
       ModuleMetadata* mm = (ModuleMetadata*) modules->items[i];
       if (mm->lang == LANG_WAX) {
-        printf("Compiling wax project '%s'...\n", mm->name->cstring);
+        printf("Transpiling wax project '%s'...\n", mm->name->cstring);
         wax_compile(manifest, mm);
+        printf("\n");
       } else {
         printf("TODO: wrap project %s from %s\n", mm->name->cstring, mm->src->cstring);
       }
