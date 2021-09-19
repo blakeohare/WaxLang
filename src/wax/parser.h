@@ -657,10 +657,7 @@ Node* parse_expr_entity(CompilerContext* ctx) {
           }
           if (!tokens_ensure_not_eof(ctx)) return NULL;
           Node* key = parse_expr_entity(ctx);
-          if (!string_equals_chars(key->type, NODE_STRING_CONSTANT_NAME)) {
-            parser_error_chars(ctx, next_token, "Only a string can be the key of a dictionary definition.");
-            return NULL;
-          }
+          if (key == NULL) return NULL;
           list_add(keys, key);
           if (tokens_pop_expected(ctx, ":") == NULL) return NULL;
           Node* value = parse_expression(ctx);

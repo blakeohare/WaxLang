@@ -279,12 +279,12 @@ typedef struct _BracketIndex {
   Node* index;
 } BracketIndex;
 #define NODE_BRACKET_INDEX_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
-#define NODE_BRACKET_INDEX_FIELD_NAME "BracketIndex"
+#define NODE_BRACKET_INDEX_NAME "BracketIndex"
 
 BracketIndex* new_bracket_index(Node* root_expression, Token* bracket_token, Node* index_expr) {
-  BracketIndex* bi = (BracketIndex*) gc_create_struct(sizeof(BracketIndex), NODE_BRACKET_INDEX_FIELD_NAME, NODE_BRACKET_INDEX_GC_FIELD_COUNT);
+  BracketIndex* bi = (BracketIndex*) gc_create_struct(sizeof(BracketIndex), NODE_BRACKET_INDEX_NAME, NODE_BRACKET_INDEX_GC_FIELD_COUNT);
   bi->node.first_token = root_expression->first_token;
-  bi->node.type = new_string(NODE_BRACKET_INDEX_FIELD_NAME);
+  bi->node.type = new_string(NODE_BRACKET_INDEX_NAME);
   bi->root = root_expression;
   bi->bracket_token = bracket_token;
   bi->index = index_expr;
