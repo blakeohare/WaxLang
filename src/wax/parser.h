@@ -725,17 +725,18 @@ int parse_integer_value(CompilerContext* ctx, Token* throw_token, String* raw_va
         digit_value = c - 'a' + 10;
       } else {
         parser_error(ctx, throw_token, string_concat3("Invalid integer constant: '", raw_value->cstring, "'."));
-        return NULL;
+        return 0;
       }
 
       if (digit_value >= 10 && !is_hex) {
         parser_error(ctx, throw_token, "Invalid integer constant. If this is a hexadecimal number, it must start with a '0x' prefix");
-        return NULL;
+        return 0;
       }
       output = output * (is_hex ? 16 : 10) + digit_value;
     }
   }
   *value_out = output * sign;
+  return 1;
 }
 
 String* parse_string_value(CompilerContext* ctx, Token* throw_token, String* string_token_value) {

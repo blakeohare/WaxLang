@@ -56,6 +56,13 @@ String* list_get_last_string(List* list) {
   return (String*) list->items[list->length - 1];
 }
 
+void* list_set(List* list, int i, void* value) {
+  if (i < 0 || i >= list->length) {
+    printf("Warning: out of bounds array acces: %d out of length %d\n", i, list->length);
+  }
+  list->items[i] = value;
+}
+
 void* list_pop(List* list) {
   return list->items[--list->length];
 }

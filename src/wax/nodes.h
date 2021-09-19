@@ -260,7 +260,7 @@ typedef struct _DotField {
   Token* field_token;
 } DotField;
 #define NODE_DOT_FIELD_GC_FIELD_COUNT (NODE_GC_FIELD_COUNT + 3)
-#define NODE_DOT_FIELD_NAME "DotToken"
+#define NODE_DOT_FIELD_NAME "DotField"
 
 DotField* new_dot_field(Node* root_expression, Token* dot_token, Token* field_token) {
   DotField* df = (DotField*) gc_create_struct(sizeof(DotField), NODE_DOT_FIELD_NAME, NODE_DOT_FIELD_GC_FIELD_COUNT);
